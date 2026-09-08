@@ -97,16 +97,30 @@ CREATE TABLE IF NOT EXISTS public.menu_ratings (
   rating INTEGER NOT NULL,
   comment TEXT,
   customer_name TEXT,
+  timestamp BIGINT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+ALTER TABLE public.menu_ratings
+  ADD COLUMN IF NOT EXISTS timestamp BIGINT;
+
 CREATE TABLE IF NOT EXISTS public.discount_codes (
-  id SERIAL PRIMARY KEY,
+  id TEXT PRIMARY KEY,
   code TEXT UNIQUE NOT NULL,
   discount_percent INTEGER NOT NULL,
+  valid_until TEXT,
+  max_usages INTEGER DEFAULT 0,
+  usage_count INTEGER DEFAULT 0,
   active BOOLEAN DEFAULT true,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
+
+ALTER TABLE public.discount_codes
+  ALTER COLUMN id DROP DEFAULT,
+  ALTER COLUMN id TYPE TEXT USING id::text,
+  ADD COLUMN IF NOT EXISTS valid_until TEXT,
+  ADD COLUMN IF NOT EXISTS max_usages INTEGER DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS usage_count INTEGER DEFAULT 0;
 
 CREATE TABLE IF NOT EXISTS public.hausverbote (
   id BIGSERIAL PRIMARY KEY,
@@ -129,6 +143,27 @@ CREATE TABLE IF NOT EXISTS public.werkstatt_orders (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   discount_code TEXT,
   discount_percent INTEGER DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS public.user_profiles (
+  id SERIAL PRIMARY KEY,
+  discord_id TEXT UNIQUE NOT NULL,
+  discord_username TEXT NOT NULL,
+  full_name TEXT NOT NULL,
+  phone TEXT NOT NULL,
+  avatar_url TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS public.vacation_requests (
+  id SERIAL PRIMARY KEY,
+  username TEXT NOT NULL,
+  start_date TEXT NOT NULL,
+  end_date TEXT NOT NULL,
+  reason TEXT,
+  status TEXT DEFAULT 'Ausstehend',
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 CREATE TABLE IF NOT EXISTS public.calendar_events (
@@ -166,6 +201,8 @@ ALTER TABLE public.discount_codes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.hausverbote ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.werkstatt_orders ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.calendar_events ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.user_profiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.vacation_requests ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "Allow all access to users" ON public.users;
 DROP POLICY IF EXISTS "Allow all access to ranks" ON public.ranks;
@@ -179,6 +216,8 @@ DROP POLICY IF EXISTS "Allow all access to discount_codes" ON public.discount_co
 DROP POLICY IF EXISTS "Allow all access to hausverbote" ON public.hausverbote;
 DROP POLICY IF EXISTS "Allow all access to werkstatt_orders" ON public.werkstatt_orders;
 DROP POLICY IF EXISTS "Allow all access to calendar_events" ON public.calendar_events;
+DROP POLICY IF EXISTS "Allow all access to user_profiles" ON public.user_profiles;
+DROP POLICY IF EXISTS "Allow all access to vacation_requests" ON public.vacation_requests;
 
 
 CREATE POLICY "Allow all access to users" ON public.users FOR ALL USING (true) WITH CHECK (true);
@@ -193,6 +232,8 @@ CREATE POLICY "Allow all access to discount_codes" ON public.discount_codes FOR 
 CREATE POLICY "Allow all access to hausverbote" ON public.hausverbote FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "Allow all access to werkstatt_orders" ON public.werkstatt_orders FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "Allow all access to calendar_events" ON public.calendar_events FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Allow all access to user_profiles" ON public.user_profiles FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Allow all access to vacation_requests" ON public.vacation_requests FOR ALL USING (true) WITH CHECK (true);
 
 
 -- ============================================
@@ -205,7 +246,7 @@ VALUES ('Website Entwickler (TeamKillerpaul)', '$2b$12$...', 'admin', 'owner', f
 ON CONFLICT (username) DO NOTHING;
 
 -- Default website config
-INSERT INTO "public"."website_config" ("id", "config_key", "config_value", "created_at", "updated_at") VALUES ('1', 'discord_channels', '{"orders":"1476083546912194703","reviews":"1476083546912194703","adminLogs":"1476083546912194703","reservations":"1476083546912194703","announcements":"1476083546912194703"}', '2026-01-29 21:09:24.290699+00', '2026-02-25 21:35:55.454+00'), ('2', 'opening_hours', '{"So":"12:00 - 22:00","Fr-Sa":"17:00 - 24:00","Mo-Do":"17:00 - 23:00"}', '2026-01-29 21:09:24.290699+00', '2026-02-25 21:35:55.597+00'), ('3', 'website_settings', '{"title":"Rex''s Diner","contactCity":"3056 Teamhausen","description":"Authentisches Restaurant","contactPhone":"+49 (0) 123 456789","contactAddress":"Senora Way","contactDiscord":"https://discord.gg/v42GuchGEr"}', '2026-01-29 21:09:24.290699+00', '2026-02-25 21:35:55.734+00'), ('4', 'discord_bot', '{"token":"MTM5NzM0Njc3MzY4ODY0NzY4MA.GxLgpu.hs-ijYoU0ixDxrYnktx5xarKpkiZa8K5hKLMik","guildId":"1293655038501064917","clientId":"1397346773688647680"}', '2026-01-29 21:09:24.290699+00', '2026-02-25 21:35:55.878+00');
+INSERT INTO "public"."website_config" ("id", "config_key", "config_value", "created_at", "updated_at") VALUES ('1', 'discord_channels', '{"orders":"1476083546912194703","reviews":"1476083546912194703","adminLogs":"1476083546912194703","reservations":"1476083546912194703","announcements":"1476083546912194703"}', '2026-01-29 21:09:24.290699+00', '2026-02-25 21:35:55.454+00'), ('2', 'opening_hours', '{"So":"12:00 - 22:00","Fr-Sa":"17:00 - 24:00","Mo-Do":"17:00 - 23:00"}', '2026-01-29 21:09:24.290699+00', '2026-02-25 21:35:55.597+00'), ('3', 'website_settings', '{"title":"Rex''s Diner","contactCity":"3056 Teamhausen","description":"Authentisches Restaurant","contactPhone":"+49 (0) 123 456789","contactAddress":"Senora Way","contactDiscord":"https://discord.gg/v42GuchGEr"}', '2026-01-29 21:09:24.290699+00', '2026-02-25 21:35:55.734+00'), ('4', 'discord_bot', '{"token":"","guildId":"","clientId":""}', '2026-01-29 21:09:24.290699+00', '2026-02-25 21:35:55.878+00');
 ;
 
 INSERT INTO "public"."menu_items" ("id", "name", "description", "price", "category", "rating", "created_at", "updated_at", "image") VALUES (3952, 'Dino Nuggets', 'Saftige, goldbraun frittierte Dino Nuggets – perfekt, um sie mit etwas BBQ- oder Süß-Sauer-Sauce zu dippen.', '5', 'Beilagen', '5.00', '2026-02-22 17:21:33.918056+00', '2026-02-22 17:21:33.918056+00', 'https://i.ibb.co/DPkGqHt1/Bild-2026-02-09-182748741-removebg-preview.png'), (3953, 'Zwiebel Ringe', 'Klassische, goldbraun frittierte Zwiebelringe, die einfach zu jedem Burger passen. Ein echter Favorit für Fast-Food-Liebhaber.', '5', 'Beilagen', '5.00', '2026-02-22 17:21:33.918056+00', '2026-02-22 17:21:33.918056+00', 'https://i.ibb.co/KjX4ss5F/Bild-2026-02-09-184036560-removebg-preview.png'), (3954, ' Vanille Eis', 'Ein klassisches Vanilleeis, das jeden perfekt ins Dessert-Rundenset integriert.', '4', 'Dessert', '5.00', '2026-02-22 17:21:33.918056+00', '2026-02-22 17:21:33.918056+00', 'https://i.ibb.co/3mbnpjnL/Bild-2026-02-10-221057079-removebg-preview.png'), (3955, 'Blaubeer Eis', 'Ein erfrischendes und fruchtiges Blaubeer-Eis, das mit seinem süßen Geschmack den perfekten Abschluss für ein fast zu deftiges Fast-Food-Dinner bietet.', '4', 'Dessert', '5.00', '2026-02-22 17:21:33.918056+00', '2026-02-22 17:21:33.918056+00', 'https://i.ibb.co/CKNG2Q9S/Bild-2026-02-10-221312816-removebg-preview.png'), (3956, 'Erdbeer Eis', 'Ein weiteres fruchtiges Eis, das die Frische von Erdbeeren einfängt. Der perfekte Abschluss für ein dekadentes Fast-Food-Mahl.

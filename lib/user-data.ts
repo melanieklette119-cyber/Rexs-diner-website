@@ -54,7 +54,7 @@ export const getUsers = async (): Promise<User[]> => {
     return []
   }
 
-  return data.map((u) => ({
+  return (data ?? []).map((u) => ({
     id: u.id,
     username: u.username,
     password: u.password,
@@ -410,7 +410,7 @@ export const getUsersByDiscordId = async (discordUserId: string): Promise<User[]
     return []
   }
 
-  return data.map((u) => ({
+  return (data ?? []).map((u) => ({
     id: u.id,
     username: u.username,
     password: u.password,
@@ -1085,7 +1085,7 @@ export const getMenuRatings = async (menuItemId?: number): Promise<MenuItemRatin
     return []
   }
 
-  return data.map((r) => ({
+  return (data ?? []).map((r) => ({
     menuItemId: r.menu_item_id,
     rating: r.rating,
     comment: r.comment,
@@ -1168,7 +1168,7 @@ export const getDiscountCodes = async (): Promise<DiscountCode[]> => {
     return []
   }
 
-  return data.map((c) => ({
+  return (data ?? []).map((c) => ({
     id: c.id,
     code: c.code,
     discountPercent: c.discount_percent,
@@ -1242,7 +1242,7 @@ export const getCalendarEvents = async (): Promise<CalendarEvent[]> => {
     return []
   }
 
-  return data.map((e) => ({
+  return (data ?? []).map((e) => ({
     id: e.id,
     date: e.date,
     title: e.title,
