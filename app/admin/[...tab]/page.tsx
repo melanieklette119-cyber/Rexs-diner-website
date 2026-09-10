@@ -13,6 +13,8 @@ export default function AdminTabPage({ params }: { params: { tab?: string[] } })
         return "reviews"
       case "mitarbeiter":
         return "users"
+      case "mitgleidschaften":
+        return "mitgliedschaften"
       default:
         return path
     }
