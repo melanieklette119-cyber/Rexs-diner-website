@@ -66,9 +66,6 @@ async function getDiscordConfig(): Promise<{
 
   console.log("[Discord] Config loaded - Guild ID:", botConfig.guildId, "Token exists:", !!botConfig.token)
 
-  // Temporary: Hardcode guildId for testing
-  botConfig.guildId = "1305896756168364053"
-
   return {
     token: botConfig.token,
     clientId: botConfig.clientId,
@@ -78,7 +75,9 @@ async function getDiscordConfig(): Promise<{
 }
 
 // Send message to Discord channel
-async function sendToDiscordChannel(channelId: string, content: string, embeds?: any[], DISCORD_TOKEN: string) {
+async function sendToDiscordChannel(channelId: string, content: string, embedsOrToken?: any[] | string, token?: string) {
+  const embeds = Array.isArray(embedsOrToken) ? embedsOrToken : []
+  const DISCORD_TOKEN = token ?? (typeof embedsOrToken === "string" ? embedsOrToken : "")
   try {
     const response = await fetch(`${DISCORD_API}/channels/${channelId}/messages`, {
       method: "POST",
@@ -104,7 +103,7 @@ async function sendToDiscordChannel(channelId: string, content: string, embeds?:
 }
 
 // Send DM to user
-async function sendDirectMessage(userId: string, content: string, embeds?: any[], DISCORD_TOKEN: string) {
+async function sendDirectMessage(userId: string, content: string, embeds?: any[], DISCORD_TOKEN = "") {
   console.log("[Rex´s Dinner & Repair] sendDirectMessage called with userId:", userId)
 
   if (!userId || !DISCORD_TOKEN) {
@@ -525,7 +524,7 @@ export async function POST(request: NextRequest) {
             await sendToDiscordChannel(
               discordConfig.channels.reservations,
               // `📩 | **Discord ID ${reservationUserId}**: Deine Reservierung wurde erfolgreich eingereicht. Warte bis die Mitarbeiter die Reservierung annehmen oder ablehnen. (DM konnte nicht gesendet werden)`,
-              undefined,
+              "",
               DISCORD_TOKEN
             )
           }
@@ -534,7 +533,7 @@ export async function POST(request: NextRequest) {
           await sendToDiscordChannel(
             discordConfig.channels.reservations,
             // `📩 | **Discord ID ${data.discordUserId}**: Deine Reservierung wurde erfolgreich eingereicht. Warte bis die Mitarbeiter die Reservierung annehmen oder ablehnen.`,
-            undefined,
+            "",
             DISCORD_TOKEN
           )
         }
@@ -1051,7 +1050,7 @@ export async function POST(request: NextRequest) {
             await sendToDiscordChannel(
               discordConfig.channels.orders,
               fallbackMessage,
-              undefined,
+              "",
               DISCORD_TOKEN
             )
           }

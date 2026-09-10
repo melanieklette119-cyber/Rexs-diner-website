@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server"
 export async function GET() {
   try {
     const supabase = await createClient()
+    if (!supabase) return NextResponse.json({ error: "Supabase ist nicht verfügbar." }, { status: 503 })
     const { data, error } = await supabase
       .from("hausverbote")
       .select("*")
@@ -50,6 +51,7 @@ export async function POST(request: Request) {
     }
 
     const supabase = await createClient()
+    if (!supabase) return NextResponse.json({ error: "Supabase ist nicht verfügbar." }, { status: 503 })
     // Try to get authenticated user, but fall back to provided employee in payload
     let employee: string | null = null
     try {
@@ -104,6 +106,7 @@ export async function DELETE(request: Request) {
     }
 
     const supabase = await createClient()
+    if (!supabase) return NextResponse.json({ error: "Supabase ist nicht verfügbar." }, { status: 503 })
     const { data, error } = await supabase.from("hausverbote").delete().eq("id", Number(id))
 
     if (error) {

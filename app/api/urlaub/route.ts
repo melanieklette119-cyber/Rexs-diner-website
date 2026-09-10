@@ -11,6 +11,7 @@ export async function POST(request: Request) {
     }
 
     const supabase = await createClient()
+    if (!supabase) return NextResponse.json({ error: "Supabase ist nicht verfügbar." }, { status: 503 })
     const { data, error } = await supabase
       .from("vacation_requests")
       .insert({
@@ -38,6 +39,7 @@ export async function POST(request: Request) {
 export async function GET() {
   try {
     const supabase = await createClient()
+    if (!supabase) return NextResponse.json({ error: "Supabase ist nicht verfügbar." }, { status: 503 })
     const { data, error } = await supabase
       .from("vacation_requests")
       .select("*")
