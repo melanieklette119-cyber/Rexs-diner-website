@@ -35,7 +35,7 @@ export async function GET(request: Request) {
 
     if (error) return NextResponse.json({ error: "Mitgliedschaften konnten nicht geladen werden." }, { status: 500 })
     const activeContracts = (data ?? []).filter((contract) =>
-      contract.status === "active" || new Date(contract.minimum_end_at) > now
+      new Date(contract.minimum_end_at) > now
     )
     return NextResponse.json({ contracts: activeContracts })
   }
@@ -45,12 +45,14 @@ export async function GET(request: Request) {
   const due = (data ?? []).filter((charge) => charge.status === "active" || new Date(charge.next_charge_at) <= new Date(charge.minimum_end_at))
   const expired = (data ?? []).filter((charge) => charge.status === "pending_cancellation" && new Date(charge.minimum_end_at) <= now).map((charge) => charge.id)
   if (expired.length > 0) await supabase.from("membership_contracts").update({ status: "cancelled", updated_at: now.toISOString() }).in("id", expired)
-  return NextResponse.json({ charges: due.filter((charge) => !expired.includes(charge.id)).map((charge) => {
-    const plan = Array.isArray(charge.membership_plans) ? charge.membership_plans[0] : charge.membership_plans
-    const chargeIntervals = getDuePeriods(charge.next_charge_at, plan?.billing_interval as MembershipPlan["billing_interval"], now)
-    const chargeAmount = Number(plan?.price ?? 0) * chargeIntervals
-    return { ...charge, chargeIntervals, chargeAmount, idempotencyKey: `membership-${charge.id}-${charge.next_charge_at}-${chargeIntervals}` }
-  }) })
+  return NextResponse.json({
+    charges: due.filter((charge) => !expired.includes(charge.id)).map((charge) => {
+      const plan = Array.isArray(charge.membership_plans) ? charge.membership_plans[0] : charge.membership_plans
+      const chargeIntervals = getDuePeriods(charge.next_charge_at, plan?.billing_interval as MembershipPlan["billing_interval"], now)
+      const chargeAmount = Number(plan?.price ?? 0) * chargeIntervals
+      return { ...charge, chargeIntervals, chargeAmount, idempotencyKey: `membership-${charge.id}-${charge.next_charge_at}-${chargeIntervals}` }
+    })
+  })
 }
 
 export async function POST(request: Request) {
