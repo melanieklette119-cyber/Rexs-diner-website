@@ -110,11 +110,14 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error("[memberships] POST failed", error)
 
+    const message = error instanceof Error ? error.message : "Vertrag konnte nicht erstellt werden."
+    const status = message.startsWith("Bitte ") ? 422 : 500
+
     return NextResponse.json(
       {
-        error: error instanceof Error ? error.message : "Vertrag konnte nicht erstellt werden.",
+        error: message,
       },
-      { status: 400 }
+      { status }
     )
   }
 }
