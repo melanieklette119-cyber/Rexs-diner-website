@@ -19,7 +19,7 @@ export async function getMembershipPlans() {
   if (!supabase) throw new Error("Supabase ist nicht verfügbar.")
   const { data, error } = await supabase.from("membership_plans").select("*").eq("active", true).order("price")
   if (error) throw error
-  return (data ?? []) as MembershipPlan[]
+  return (Array.isArray(data) ? data : []) as MembershipPlan[]
 }
 
 export async function getMembershipPlan(id: string) {
