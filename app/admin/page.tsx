@@ -5620,7 +5620,7 @@ const [discountCodes, setDiscountCodes] = useState<DiscountCode[]>([])
                     <div>
                       <h4 className="font-semibold mb-2">1. Notfallplan</h4>
                       <ul className="list-disc list-inside space-y-1 text-sm">
-                        <li>Notausgänge m��ssen bekannt sein</li>
+                        <li>Notausgänge müssen bekannt sein</li>
                         <li>Erste-Hilfe-Ausrüstung ist im Restaurant vorhanden</li>
                         <li>Evakuierungsplan wird bei Einstellung besprochen</li>
                         <li>Im Notfall ruhig bleiben und Anweisungen des Managers folgen</li>
