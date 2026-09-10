@@ -58,9 +58,19 @@ export function makeDiscountCode() {
   return `MITGLIED-${crypto.randomUUID().replaceAll("-", "").slice(0, 12).toUpperCase()}`
 }
 
+function readCookie(cookieHeader: string, name: string) {
+  const value = cookieHeader.match(new RegExp(`(?:^|;\\s*)${name.replace(/[.*+?^${}()|[\\]\\\\]/g, "\\\\$&")}=([^;]*)`))?.[1]
+  if (!value) return null
+  try {
+    return decodeURIComponent(value)
+  } catch {
+    return value
+  }
+}
+
 export function getDiscordIdFromRequest(request: Request) {
   const cookie = request.headers.get("cookie") ?? ""
-  const suffix = cookie.match(/(?:^|;\s*)discord_current_suffix=([^;]+)/)?.[1]
+  const suffix = readCookie(cookie, "discord_current_suffix")
   if (!suffix) return null
-  return cookie.match(new RegExp(`(?:^|;\\s*)discord_id_${suffix}=([^;]+)`))?.[1] ?? null
+  return readCookie(cookie, `discord_id_${suffix}`)
 }
