@@ -34,9 +34,12 @@ export async function POST(request: Request) {
   if (!supabase) return NextResponse.json({ error: "Keine Berechtigung." }, { status: 403 })
   const body = await request.json()
   const payload = { name: String(body.name ?? "").trim(), description: String(body.description ?? "").trim(), price: Number(body.price), billing_interval: body.billing_interval, min_duration_months: Math.max(1, Number(body.min_duration_months)), cancellation_notice_months: Math.max(0, Number(body.cancellation_notice_months)), newcomer_only: Boolean(body.newcomer_only), includes_discount: Boolean(body.includes_discount), discount_percent: body.includes_discount ? Number(body.discount_percent) : null, active: body.active !== false }
-  if (!payload.name || !Number.isFinite(payload.price) || payload.price < 0 || !["monthly", "quarterly", "yearly"].includes(payload.billing_interval)) return NextResponse.json({ error: "Ungültige Stufendaten." }, { status: 400 })
+  if (!payload.name || !Number.isInteger(payload.price) || payload.price < 0 || !["daily", "weekly", "monthly"].includes(payload.billing_interval)) return NextResponse.json({ error: "Ungültige Stufe oder ungültiges Abrechnungsintervall." }, { status: 400 })
   const { data, error } = await supabase.from("membership_plans").insert(payload).select().single()
-  if (error) return NextResponse.json({ error: "Stufe konnte nicht gespeichert werden." }, { status: 500 })
+  if (error) {
+    console.error("[admin/memberships] POST failed:", error)
+    return NextResponse.json({ error: "Stufe konnte nicht gespeichert werden. Bitte prüfe, ob die Tabelle membership_plans in Supabase angelegt wurde." }, { status: 500 })
+  }
   return NextResponse.json({ plan: data }, { status: 201 })
 }
 
@@ -58,7 +61,7 @@ export async function PATCH(request: Request) {
     active: body.active !== false,
     updated_at: new Date().toISOString(),
   }
-  if (!id || !updates.name || !Number.isFinite(updates.price) || updates.price < 0 || !["monthly", "quarterly", "yearly"].includes(updates.billing_interval)) return NextResponse.json({ error: "Ungültige Stufendaten." }, { status: 400 })
+  if (!id || !updates.name || !Number.isInteger(updates.price) || updates.price < 0 || !["daily", "weekly", "monthly"].includes(updates.billing_interval)) return NextResponse.json({ error: "Ungültige Stufe oder ungültiges Abrechnungsintervall." }, { status: 400 })
   const { error } = await supabase.from("membership_plans").update(updates).eq("id", id)
   if (error) return NextResponse.json({ error: "Stufe konnte nicht aktualisiert werden." }, { status: 500 })
   return NextResponse.json({ ok: true })

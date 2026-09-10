@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
-import { addMonths, getDiscordIdFromRequest, getMembershipPlans, getMembershipPlan, intervalMonths, makeDiscountCode, validateMembershipFields } from "@/lib/membership"
+import { addBillingInterval, addMonths, getDiscordIdFromRequest, getMembershipPlans, getMembershipPlan, makeDiscountCode, validateMembershipFields } from "@/lib/membership"
 
 export async function GET(request: Request) {
   try {
@@ -40,7 +40,7 @@ export async function POST(request: Request) {
       discord_id: fields.discordId,
       fivem_bank_account_id: fields.bankAccountId,
       minimum_end_at: addMonths(now, months),
-      next_charge_at: addMonths(now, intervalMonths(plan.billing_interval)),
+      next_charge_at: addBillingInterval(now, plan.billing_interval),
       billing_interval: plan.billing_interval,
     }).select().single()
     if (error) throw error
@@ -71,7 +71,7 @@ export async function PATCH(request: Request) {
       return NextResponse.json({ ok: true })
     }
     const plan = await getMembershipPlan(String(body.planId ?? ""))
-    const { error } = await supabase.from("membership_contracts").update({ plan_id: plan.id, billing_interval: plan.billing_interval, next_charge_at: addMonths(new Date(), intervalMonths(plan.billing_interval)), updated_at: new Date().toISOString() }).eq("id", contract.id).eq("user_id", discordId)
+    const { error } = await supabase.from("membership_contracts").update({ plan_id: plan.id, billing_interval: plan.billing_interval, next_charge_at: addBillingInterval(new Date(), plan.billing_interval), updated_at: new Date().toISOString() }).eq("id", contract.id).eq("user_id", discordId)
     if (error) throw error
     return NextResponse.json({ ok: true })
   } catch (error) {
