@@ -19,17 +19,17 @@ export default function MitgliedschaftenPage() {
   const [form, setForm] = useState({ fullName: "", discordId: "", bankAccountId: "" })
   const [accepted, setAccepted] = useState(false)
   const [message, setMessage] = useState("")
-  useEffect(() => {
-    const session = getDiscordSession()
-    setDiscordUser(session)
-    if (session) {
-      setForm((prev) => ({
-        ...prev,
-        discordId: session.id,
-        fullName: session.username || prev.fullName,
-      }))
-    }
-  }, [])
+    useEffect(() => {
+      const session = getDiscordSession()
+      setDiscordUser(session)
+      if (session) {
+        setForm((prev) => ({
+          ...prev,
+          discordId: session.id,
+          fullName: session.username || prev.fullName,
+        }))
+      }
+    }, [])
   useEffect(() => { fetch("/api/memberships").then((r) => r.json()).then((d) => setPlans(d.plans ?? [])) }, [])
   if (!discordUser) {
     return (
@@ -57,6 +57,8 @@ export default function MitgliedschaftenPage() {
   }
   async function subscribe() {
     if (!selected || !accepted) return setMessage("Bitte Stufe auswählen und Vertrag bestätigen.")
+    if (!form.fullName.trim()) return setMessage("Bitte einen Namen angeben.")
+    if (!form.bankAccountId.trim()) return setMessage("Bitte deine FiveM-Bankkonto-ID angeben.")
     const response = await fetch("/api/memberships", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ planId: selected.id, ...form }) })
     const data = await response.json()
     setMessage(response.ok ? "Der Vertrag wurde erstellt." : data.error ?? "Fehler beim Erstellen.")
@@ -92,7 +94,7 @@ export default function MitgliedschaftenPage() {
           <CardHeader><CardTitle>Vertrag für {selected.name}</CardTitle></CardHeader>
           <CardContent className="space-y-4">
             <div><Label htmlFor="name">Name</Label><Input id="name" value={form.fullName} onChange={(e) => setForm({ ...form, fullName: e.target.value })} /></div>
-            <div><Label htmlFor="bank">FiveM-Bankkonto-ID</Label><Input id="bank" value={form.bankAccountId} onChange={(e) => setForm({ ...form, bankAccountId: e.target.value })} /></div>
+            <div><Label htmlFor="bank">FiveM-Bankkonto-ID</Label><Input id="bank" placeholder="Deine Bankkonto-ID" value={form.bankAccountId} onChange={(e) => setForm({ ...form, bankAccountId: e.target.value })} required /></div>
             <div className="space-y-2">
               <Label>Angemeldet als</Label>
               <div className="flex items-center gap-3 rounded-lg border border-[#5865F2]/30 bg-[#5865F2]/10 p-3">
