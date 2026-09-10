@@ -87,6 +87,20 @@ const SERVICES: Service[] = [
       "Transport zur Werkstatt",
     ],
   },
+  {
+    id: 104,
+    name: "Rundum-sorglos-Pack",
+    description:
+      "Unser Komplett-Paket enthält Reparatur, Wartung und Abschleppung zum festen Paketpreis.",
+    price: 7000,
+    icon: Wrench,
+    features: [
+      "Komplette Fahrzeugreparatur",
+      "Umfassende Wartung",
+      "Abschleppung inklusive",
+      "Ein fester Paketpreis",
+    ],
+  },
 ]
 
 export default function WerkstattPage() {
