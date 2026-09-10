@@ -1,78 +1,83 @@
 import { NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
-import { getDiscordIdFromRequest } from "@/lib/membership"
-
-async function requireAdmin(request: Request) {
-  const discordId = getDiscordIdFromRequest(request)
-  const username = request.headers.get("x-admin-username")?.trim()
-  if (!discordId && !username) return null
-  const supabase = await createClient()
-  if (!supabase) return null
-  const query = supabase.from("users").select("id, role, user_group")
-  const { data } = discordId
-    ? await query.eq("discord_user_id", discordId).maybeSingle()
-    : await query.eq("username", username).maybeSingle()
-  if (!data) return null
-  const role = String(data.role ?? "").toLowerCase()
-  const userGroup = String(data.user_group ?? "").toLowerCase()
-  const isOwner = role === "owner" || userGroup === "owner"
-  const canManageMemberships = isOwner
-  if (!canManageMemberships) return null
-  return supabase
-}
+import { addBillingInterval, addMonths, getDiscordIdFromRequest, getMembershipPlans, getMembershipPlan, makeDiscountCode, validateMembershipFields } from "@/lib/membership"
 
 export async function GET(request: Request) {
-  const supabase = await requireAdmin(request)
-  if (!supabase) return NextResponse.json({ error: "Keine Berechtigung." }, { status: 403 })
-  const { data, error } = await supabase.from("membership_plans").select("*").order("created_at", { ascending: false })
-  if (error) return NextResponse.json({ error: "Stufen konnten nicht geladen werden." }, { status: 500 })
-  return NextResponse.json({ plans: data ?? [] })
+  try {
+    const discordId = getDiscordIdFromRequest(request)
+    const url = new URL(request.url)
+    if (url.searchParams.get("mine") === "true") {
+      if (!discordId) return NextResponse.json({ error: "Nicht angemeldet." }, { status: 401 })
+      const supabase = await createClient()
+      if (!supabase) throw new Error("Supabase ist nicht verfügbar.")
+      const { data, error } = await supabase.from("membership_contracts").select("*, membership_plans(*)").eq("user_id", discordId).order("created_at", { ascending: false })
+      if (error) throw error
+      return NextResponse.json({ contracts: data ?? [] })
+    }
+    return NextResponse.json({ plans: await getMembershipPlans() })
+  } catch (error) {
+    console.error("[memberships] GET failed", error)
+    return NextResponse.json({ error: "Mitgliedschaften konnten nicht geladen werden." }, { status: 500 })
+  }
 }
 
 export async function POST(request: Request) {
-  const supabase = await requireAdmin(request)
-  if (!supabase) return NextResponse.json({ error: "Keine Berechtigung." }, { status: 403 })
-  const body = await request.json()
-  const payload = { name: String(body.name ?? "").trim(), description: String(body.description ?? "").trim(), price: Number(body.price), billing_interval: body.billing_interval, min_duration_months: Math.max(1, Number(body.min_duration_months)), cancellation_notice_months: Math.max(0, Number(body.cancellation_notice_months)), newcomer_only: Boolean(body.newcomer_only), includes_discount: Boolean(body.includes_discount), discount_percent: body.includes_discount ? Number(body.discount_percent) : null, active: body.active !== false }
-  if (!payload.name || !Number.isInteger(payload.price) || payload.price < 0 || !["daily", "weekly", "monthly"].includes(payload.billing_interval)) return NextResponse.json({ error: "Ungültige Stufe oder ungültiges Abrechnungsintervall." }, { status: 400 })
-  const { data, error } = await supabase.from("membership_plans").insert(payload).select().single()
-  if (error) {
-    console.error("[admin/memberships] POST failed:", error)
-    return NextResponse.json({ error: "Stufe konnte nicht gespeichert werden. Bitte prüfe, ob die Tabelle membership_plans in Supabase angelegt wurde." }, { status: 500 })
+  try {
+    const discordId = getDiscordIdFromRequest(request)
+    if (!discordId) return NextResponse.json({ error: "Bitte zuerst mit Discord anmelden." }, { status: 401 })
+    const body = await request.json()
+    const plan = await getMembershipPlan(String(body.planId ?? ""))
+    const fields = validateMembershipFields(body)
+    if (fields.discordId !== discordId) return NextResponse.json({ error: "Die Discord-ID passt nicht zur Sitzung." }, { status: 403 })
+    const now = new Date()
+    const months = Math.max(1, plan.min_duration_months)
+    const supabase = await createClient()
+    if (!supabase) throw new Error("Supabase ist nicht verfügbar.")
+    const { data: contract, error } = await supabase.from("membership_contracts").insert({
+      user_id: discordId,
+      plan_id: plan.id,
+      full_name: fields.fullName,
+      discord_id: fields.discordId,
+      fivem_bank_account_id: fields.bankAccountId,
+      minimum_end_at: addMonths(now, months),
+      next_charge_at: addBillingInterval(now, plan.billing_interval),
+      billing_interval: plan.billing_interval,
+    }).select().single()
+    if (error) throw error
+    if (plan.includes_discount && plan.discount_percent && contract) {
+      await supabase.from("membership_discount_codes").insert({ contract_id: contract.id, code: makeDiscountCode(), discount_percent: plan.discount_percent })
+    }
+    return NextResponse.json({ contract }, { status: 201 })
+  } catch (error) {
+    console.error("[memberships] POST failed", error)
+    const message = error instanceof Error ? error.message : "Vertrag konnte nicht erstellt werden."
+    const status = message.startsWith("Bitte ") ? 422 : 500
+    return NextResponse.json({ error: message }, { status })
   }
-  return NextResponse.json({ plan: data }, { status: 201 })
 }
 
 export async function PATCH(request: Request) {
-  const supabase = await requireAdmin(request)
-  if (!supabase) return NextResponse.json({ error: "Keine Berechtigung." }, { status: 403 })
-  const body = await request.json()
-  const id = String(body.id ?? "")
-  const updates = {
-    name: String(body.name ?? "").trim(),
-    description: String(body.description ?? "").trim(),
-    price: Number(body.price),
-    billing_interval: body.billing_interval,
-    min_duration_months: Math.max(1, Number(body.min_duration_months)),
-    cancellation_notice_months: Math.max(0, Number(body.cancellation_notice_months)),
-    newcomer_only: Boolean(body.newcomer_only),
-    includes_discount: Boolean(body.includes_discount),
-    discount_percent: body.includes_discount ? Number(body.discount_percent) : null,
-    active: body.active !== false,
-    updated_at: new Date().toISOString(),
+  try {
+    const discordId = getDiscordIdFromRequest(request)
+    if (!discordId) return NextResponse.json({ error: "Nicht angemeldet." }, { status: 401 })
+    const body = await request.json()
+    const supabase = await createClient()
+    if (!supabase) throw new Error("Supabase ist nicht verfügbar.")
+    const { data: contract, error: readError } = await supabase.from("membership_contracts").select("*, membership_plans(*)").eq("id", body.contractId).eq("user_id", discordId).single()
+    if (readError || !contract) return NextResponse.json({ error: "Mitgliedschaft nicht gefunden." }, { status: 404 })
+    if (body.action === "cancel") {
+      const minimumEnd = new Date(contract.minimum_end_at)
+      if (minimumEnd > new Date()) return NextResponse.json({ error: `Kündigung ist erst ab ${minimumEnd.toLocaleDateString("de-DE")} möglich.` }, { status: 409 })
+      const { error } = await supabase.from("membership_contracts").update({ status: "pending_cancellation", cancellation_requested_at: new Date().toISOString(), updated_at: new Date().toISOString() }).eq("id", contract.id).eq("user_id", discordId)
+      if (error) throw error
+      return NextResponse.json({ ok: true })
+    }
+    const plan = await getMembershipPlan(String(body.planId ?? ""))
+    const { error } = await supabase.from("membership_contracts").update({ plan_id: plan.id, billing_interval: plan.billing_interval, next_charge_at: addBillingInterval(new Date(), plan.billing_interval), updated_at: new Date().toISOString() }).eq("id", contract.id).eq("user_id", discordId)
+    if (error) throw error
+    return NextResponse.json({ ok: true })
+  } catch (error) {
+    console.error("[memberships] PATCH failed", error)
+    return NextResponse.json({ error: "Änderung konnte nicht gespeichert werden." }, { status: 400 })
   }
-  if (!id || !updates.name || !Number.isInteger(updates.price) || updates.price < 0 || !["daily", "weekly", "monthly"].includes(updates.billing_interval)) return NextResponse.json({ error: "Ungültige Stufe oder ungültiges Abrechnungsintervall." }, { status: 400 })
-  const { error } = await supabase.from("membership_plans").update(updates).eq("id", id)
-  if (error) return NextResponse.json({ error: "Stufe konnte nicht aktualisiert werden." }, { status: 500 })
-  return NextResponse.json({ ok: true })
-}
-
-export async function DELETE(request: Request) {
-  const supabase = await requireAdmin(request)
-  if (!supabase) return NextResponse.json({ error: "Keine Berechtigung." }, { status: 403 })
-  const id = new URL(request.url).searchParams.get("id")
-  if (!id) return NextResponse.json({ error: "Stufe fehlt." }, { status: 400 })
-  const { error } = await supabase.from("membership_plans").delete().eq("id", id)
-  if (error) return NextResponse.json({ error: "Stufe konnte nicht gelöscht werden. Bestehende Verträge können sie noch verwenden." }, { status: 409 })
-  return NextResponse.json({ ok: true })
 }
