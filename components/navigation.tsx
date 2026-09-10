@@ -4,7 +4,7 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useState, useEffect } from "react"
 import { cn } from "@/lib/utils"
-import { Menu, X, LogOut, User, Calendar, ShoppingBag, Wrench } from "lucide-react"
+import { Menu, X, LogOut, User, Calendar, ShoppingBag, Wrench, CreditCard } from "lucide-react"
 import { getDiscordSession } from "@/lib/discord-session"
 import {
   DropdownMenu,
@@ -19,6 +19,7 @@ const navigationItems: { href: string; label: string; external?: boolean }[] = [
   { href: "/bestellen", label: "Speisekarte" },
   { href: "/reservierung", label: "Reservierung" },
   { href: "/werkstatt", label: "Werkstatt" },
+  { href: "/mitgliedschaften", label: "Mitgliedschaften" },
   { href: "/bewertung", label: "Bewertungen" },
   { href: "/team", label: "Team" },
   { href: "/ueber-uns", label: "Über uns" },
@@ -134,6 +135,12 @@ export function Navigation() {
                     Meine Werkstattbuchungen
                   </Link>
                 </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/meine-mitgliedschaften" className="flex items-center gap-2 cursor-pointer">
+                    <CreditCard className="h-4 w-4" />
+                    Meine Mitgliedschaften
+                  </Link>
+                </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleLogout} className="flex items-center gap-2 text-red-600 cursor-pointer">
                   <LogOut className="h-4 w-4" />
@@ -217,6 +224,14 @@ export function Navigation() {
                 >
                   <ShoppingBag className="h-4 w-4" />
                   Meine Bestellungen
+                </Link>
+                <Link
+                  href="/meine-mitgliedschaften"
+                  className="flex items-center gap-2 text-base text-muted-foreground hover:text-primary transition-colors font-medium py-1"
+                  onClick={() => setMobileOpen(false)}
+                >
+                  <CreditCard className="h-4 w-4" />
+                  Meine Mitgliedschaften
                 </Link>
                 <Link
                   href="/profile#werkstatt"

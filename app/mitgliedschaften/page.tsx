@@ -1,0 +1,28 @@
+"use client"
+
+import { useEffect, useState } from "react"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Badge } from "@/components/ui/badge"
+
+type Plan = { id: string; name: string; description: string; price: number; billing_interval: string; min_duration_months: number; cancellation_notice_months: number; newcomer_only: boolean; includes_discount: boolean; discount_percent: number | null }
+
+export default function MitgliedschaftenPage() {
+  const [plans, setPlans] = useState<Plan[]>([])
+  const [selected, setSelected] = useState<Plan | null>(null)
+  const [form, setForm] = useState({ fullName: "", discordId: "", bankAccountId: "" })
+  const [accepted, setAccepted] = useState(false)
+  const [message, setMessage] = useState("")
+  useEffect(() => { fetch("/api/memberships").then((r) => r.json()).then((d) => setPlans(d.plans ?? [])) }, [])
+  async function subscribe() {
+    if (!selected || !accepted) return setMessage("Bitte Stufe auswählen und Vertrag bestätigen.")
+    const response = await fetch("/api/memberships", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ planId: selected.id, ...form }) })
+    const data = await response.json()
+    setMessage(response.ok ? "Der Vertrag wurde erstellt." : data.error ?? "Fehler beim Erstellen.")
+    if (response.ok) setSelected(null)
+  }
+  return <main className="mx-auto max-w-6xl px-6 py-12"><div className="mb-10"><Badge>FiveM Ingame-Bank</Badge><h1 className="mt-3 text-4xl font-bold">Mitgliedschaften</h1><p className="mt-3 text-muted-foreground">Wähle eine Stufe und verwalte dein Abo jederzeit.</p></div><div className="grid gap-6 md:grid-cols-3">{plans.map((plan) => <Card key={plan.id} className="flex flex-col"><CardHeader><CardTitle>{plan.name}</CardTitle><p className="text-sm text-muted-foreground">{plan.description}</p></CardHeader><CardContent className="flex flex-1 flex-col gap-4"><div className="text-3xl font-bold">{Number(plan.price).toFixed(2)} € <span className="text-sm font-normal text-muted-foreground">/ {plan.billing_interval === "monthly" ? "Monat" : plan.billing_interval}</span></div><p className="text-sm">Mindestlaufzeit: {Math.max(1, plan.min_duration_months)} Monat(e)</p>{plan.includes_discount && <Badge variant="secondary">{plan.discount_percent}% Rabatt inklusive</Badge>}<Button className="mt-auto" onClick={() => setSelected(plan)}>Stufe auswählen</Button></CardContent></Card>)}</div>{selected && <Card className="mx-auto mt-10 max-w-2xl"><CardHeader><CardTitle>Vertrag für {selected.name}</CardTitle></CardHeader><CardContent className="space-y-4"><div><Label htmlFor="name">Name</Label><Input id="name" value={form.fullName} onChange={(e) => setForm({ ...form, fullName: e.target.value })} /></div><div><Label htmlFor="discord">Discord-ID</Label><Input id="discord" inputMode="numeric" value={form.discordId} onChange={(e) => setForm({ ...form, discordId: e.target.value })} /></div><div><Label htmlFor="bank">FiveM-Bankkonto-ID</Label><Input id="bank" value={form.bankAccountId} onChange={(e) => setForm({ ...form, bankAccountId: e.target.value })} /></div><label className="flex items-start gap-3 text-sm"><Checkbox checked={accepted} onCheckedChange={(value) => setAccepted(value === true)} /><span>Ich akzeptiere die Mindestlaufzeit von mindestens einem Monat und die Abbuchung per FiveM-Ingame-Bank.</span></label>{message && <p className="text-sm text-primary">{message}</p>}<div className="flex gap-3"><Button onClick={subscribe}>Vertrag abschließen</Button><Button variant="outline" onClick={() => setSelected(null)}>Abbrechen</Button></div></CardContent></Card>}</main>
+}
