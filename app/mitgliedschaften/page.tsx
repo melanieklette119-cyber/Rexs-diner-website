@@ -30,7 +30,11 @@ export default function MitgliedschaftenPage() {
         }))
       }
     }, [])
-  useEffect(() => { fetch("/api/memberships").then((r) => r.json()).then((d) => setPlans(d.plans ?? [])) }, [])
+  useEffect(() => {
+    fetch("/api/memberships")
+      .then((r) => r.json())
+      .then((d) => setPlans(Array.isArray(d.plans) ? d.plans : []))
+  }, [])
   if (!discordUser) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
