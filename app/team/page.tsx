@@ -63,8 +63,8 @@ export default function TeamPage() {
     const rankA = ranks[a.group]
     const rankB = ranks[b.group]
 
-    const valueA = (rankA && (rankA.level ?? rankA.id)) ?? 0
-    const valueB = (rankB && (rankB.level ?? rankB.id)) ?? 0
+    const valueA = (rankA && (rankA.level ?? 0)) ?? 0
+    const valueB = (rankB && (rankB.level ?? 0)) ?? 0
 
     // Primär: Rangwert absteigend
     if (valueB !== valueA) return valueB - valueA

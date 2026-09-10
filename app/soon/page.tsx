@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { getWebsiteConfig, type SoonProject } from '@/lib/user-data';
 
 export default function DatenschutzPage() {
-  const [seconds, setSeconds] = useState(10); // Timer für automatische Weiterleitung
+  const [seconds, setSeconds] = useState<number | null>(10); // Timer für automatische Weiterleitung
   const [daysRemaining, setDaysRemaining] = useState<number | null>(null);
   const [currentDateTime, setCurrentDateTime] = useState<string>(''); // Aktuelle Uhrzeit
   const [projects, setProjects] = useState<SoonProject[]>([]);

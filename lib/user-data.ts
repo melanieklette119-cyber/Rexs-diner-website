@@ -574,6 +574,7 @@ export type Reservation = {
   notes?: string
   status: string
   created_at?: string
+  timestamp?: number
 }
 
 export const getReservations = async (): Promise<Reservation[]> => {
@@ -689,6 +690,9 @@ export type Order = {
   status: string
   notes?: string
   created_at?: string
+  timestamp?: number
+  phone?: string
+  address?: string
 }
 
 export const getOrders = async (): Promise<Order[]> => {
@@ -1253,7 +1257,7 @@ export const getCalendarEvents = async (): Promise<CalendarEvent[]> => {
   }))
 }
 
-export const saveCalendarEvent = async (event: Omit<CalendarEvent, "id">): Promise<CalendarEvent | null> => {
+export const saveCalendarEvent = async (event: CalendarEvent): Promise<CalendarEvent | null> => {
   const supabase = createClient()
   if (!supabase) return null
 

@@ -771,16 +771,7 @@ export default function AdminPage({ initialTab }: { initialTab?: string } = {}) 
   const router = useRouter()
 
   // Rabattcodes State
-  const [discountCodes, setDiscountCodes] = useState([] as {
-    id: string
-    code: string
-    discountPercent: number
-    validUntil: string
-    maxUsages: number
-    usageCount: number
-    createdAt: number
-    active?: boolean
-  }[])
+const [discountCodes, setDiscountCodes] = useState<DiscountCode[]>([])
   const [discountActionIndex, setDiscountActionIndex] = useState({} as { [key: string]: number })
   const [discountCarouselIndex, setDiscountCarouselIndex] = useState(0)
   const [showDiscountModal, setShowDiscountModal] = useState(false)
@@ -1257,12 +1248,7 @@ export default function AdminPage({ initialTab }: { initialTab?: string } = {}) 
 
     // Normalize different possible shapes returned from the loader
     // e.g. could be an array, or an object like { data: [...] } or { reviews: [...] }
-    let rawReviews: any[] = []
-    if (Array.isArray(dbReviews)) {
-      rawReviews = dbReviews
-    } else if (dbReviews) {
-      rawReviews = dbReviews.data ?? dbReviews.reviews ?? []
-    }
+    const rawReviews: any[] = Array.isArray(dbReviews) ? dbReviews : []
 
     // Some records might use different property names for type; fall back safely
     // If no type is present, treat as a restaurant review by default
@@ -2041,8 +2027,9 @@ export default function AdminPage({ initialTab }: { initialTab?: string } = {}) 
   }
 
   const handleDeleteReview = async (id: string) => {
-    await deleteReviewFromDB(id)
-    const updatedReviews = reviews.filter((review) => review.id !== id)
+    const numericId = Number(id)
+    await deleteReviewFromDB(numericId)
+    const updatedReviews = reviews.filter((review) => review.id !== numericId)
     setReviews(updatedReviews)
   }
 
@@ -2440,7 +2427,12 @@ export default function AdminPage({ initialTab }: { initialTab?: string } = {}) 
 
         // Load website config from Supabase
         const config = await getWebsiteConfig()
-        setWebsiteConfig(config)
+        setWebsiteConfig((previous) => ({
+          ...previous,
+          ...config,
+          discordChannels: { ...previous.discordChannels, ...config.discordChannels },
+          openingHours: { ...previous.openingHours, ...config.openingHours },
+        }))
 
         // Load custom ranks from Supabase
         const ranks = await getCustomRanks()
@@ -4017,7 +4009,7 @@ export default function AdminPage({ initialTab }: { initialTab?: string } = {}) 
                                         <strong>Bestellnummer:</strong> {order.id}
                                       </p>
                                       <p>
-                                        <strong>Datum:</strong> {new Date(order.timestamp).toLocaleDateString('de-DE')}
+                                        <strong>Datum:</strong> {new Date(order.timestamp ?? order.created_at ?? Date.now()).toLocaleDateString('de-DE')}
                                       </p>
                                       <p>
                                         <strong>Telefon:</strong> {order.phone}
@@ -4718,7 +4710,7 @@ export default function AdminPage({ initialTab }: { initialTab?: string } = {}) 
                                 </div>
                                 <div className="ml-4">
                                   <Button
-                                    onClick={() => handleDeleteReview(review.id)}
+                                    onClick={() => handleDeleteReview(String(review.id))}
                                     size="sm"
                                     variant="outline"
                                     className="text-destructive hover:text-destructive/80"
