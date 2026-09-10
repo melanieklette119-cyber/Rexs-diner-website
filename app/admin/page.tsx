@@ -122,6 +122,7 @@ const formatPermissions = (permissions: string[]) => {
       case "hausverbote": return "Hausverbotsverwaltung"
       case "rabattcodes": return "Rabattcode-Management"
       case "rabattcodes_or_view": return "Rabattcodes einsehen"
+      case "memberships_manage": return "Mitgliedschaften verwalten"
       case "kalender_or_view": return "Kalender ansehen und verwalten"
       case "werkstatt": return "Werkstattbuchungen"
       case "archive": return "Archivverwaltung"
@@ -226,6 +227,7 @@ const RankCard = ({
                   { key: "archive", label: "Archiv einsehen" },
                   { key: "users_limited", label: "Mitarbeiterverwaltung (eingeschränkt)" },
                   { key: "users", label: "Vollständige Mitarbeiterverwaltung" },
+                  { key: "memberships_manage", label: "Mitgliedschaften verwalten" },
                 ].map((permission) => (
                   <label key={permission.key} className="flex items-center space-x-2">
                     <input
@@ -387,8 +389,9 @@ export default function AdminPage({ initialTab }: { initialTab?: string } = {}) 
       { key: "ranks", label: "Dienstgrade", permission: "ranks" },
       { key: "config", label: "Website-Konfiguration", permission: "config" },
       { key: "hausverbote", label: "Hausverbote", permission: "hausverbote" },
-      { key: "rabattcodes", label: "Rabattcodes", permission: "rabattcodes_or_view" },
-      { key: "kalender", label: "Kalender (In Bearbeitung)", permission: "kalender_or_view" },
+  { key: "rabattcodes", label: "Rabattcodes", permission: "rabattcodes_or_view" },
+  { key: "mitgliedschaften", label: "Mitgliedschaften", permission: "memberships_manage" },
+  { key: "kalender", label: "Kalender (In Bearbeitung)", permission: "kalender_or_view" },
     ]
 
     return allTabs.filter((t) => (t.permission ? hasPermission(t.permission) : true))
@@ -2174,9 +2177,11 @@ export default function AdminPage({ initialTab }: { initialTab?: string } = {}) 
         return userGroup === "owner" // Nur Owner kann Ränge verwalten
       case "users":
         return userRank.permissions.includes("users") || userRank.permissions.includes("users_limited")
-      case "rabattcodes_or_view":
-        return userRank.permissions.includes("rabattcodes") || userRank.permissions.includes("rabattcodes_or_view")
-      case "kalender_or_view":
+  case "rabattcodes_or_view":
+  return userRank.permissions.includes("rabattcodes") || userRank.permissions.includes("rabattcodes_or_view")
+  case "memberships_manage":
+  return userGroup === "owner" || userRank.permissions.includes("memberships_manage")
+  case "kalender_or_view":
         return userRank.permissions.includes("kalender") || userRank.permissions.includes("kalender_or_view") || userRank.permissions.includes("all")
       case "reservations":
       case "orders":
@@ -2401,9 +2406,9 @@ export default function AdminPage({ initialTab }: { initialTab?: string } = {}) 
 
       if (loggedIn === "true" && userRole === "admin") {
         setIsAuthenticated(true)
-        setUserGroup(group)
+  setUserGroup(String(group ?? "").toLowerCase())
 
-        // Load menu items from Supabase
+  // Load menu items from Supabase
         const menuData = await getMenuItems()
         setMenuItems(menuData)
 
@@ -6063,8 +6068,8 @@ export default function AdminPage({ initialTab }: { initialTab?: string } = {}) 
                       localStorage.setItem("userGroup", account.group)
                       localStorage.setItem("userId", String(account.id))
                       localStorage.setItem("discordUserId", account.discordUserId || "")
-                      setUserGroup(account.group)
-                      setShowAccountSwitch(false)
+  setUserGroup(String(account.group ?? "").toLowerCase())
+  setShowAccountSwitch(false)
                       // Reload the page to apply changes
                       window.location.reload()
                     }}
