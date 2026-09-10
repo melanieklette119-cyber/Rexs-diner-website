@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
+import { addBillingInterval, type MembershipPlan } from "@/lib/membership"
 
 function authorized(request: Request) {
   const expected = process.env.MEMBERSHIP_CRON_SECRET
@@ -27,9 +28,8 @@ export async function POST(request: Request) {
   const { error } = await supabase.from("membership_charge_attempts").upsert({ contract_id: contract.id, idempotency_key: body.idempotencyKey, scheduled_for: contract.next_charge_at, status: body.status, amount: Number(plan?.price ?? 0), fivem_bank_account_id: contract.fivem_bank_account_id, processed_at: new Date().toISOString(), error_message: body.errorMessage ?? null }, { onConflict: "idempotency_key" })
   if (error) return NextResponse.json({ error: "Abbuchungsergebnis konnte nicht gespeichert werden." }, { status: 500 })
   if (body.status === "succeeded") {
-    const months = plan?.billing_interval === "yearly" ? 12 : plan?.billing_interval === "quarterly" ? 3 : 1
-    const next = new Date(contract.next_charge_at); next.setMonth(next.getMonth() + months)
-    await supabase.from("membership_contracts").update({ next_charge_at: next.toISOString(), updated_at: new Date().toISOString() }).eq("id", contract.id)
+    const next = addBillingInterval(new Date(contract.next_charge_at), plan?.billing_interval as MembershipPlan["billing_interval"])
+    await supabase.from("membership_contracts").update({ next_charge_at: next, updated_at: new Date().toISOString() }).eq("id", contract.id)
   }
   return NextResponse.json({ ok: true })
 }

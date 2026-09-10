@@ -5,7 +5,7 @@ export type MembershipPlan = {
   name: string
   description: string
   price: number
-  billing_interval: "monthly" | "quarterly" | "yearly"
+  billing_interval: "daily" | "weekly" | "monthly"
   min_duration_months: number
   cancellation_notice_months: number
   newcomer_only: boolean
@@ -36,8 +36,12 @@ export function addMonths(date: Date, months: number) {
   return result.toISOString()
 }
 
-export function intervalMonths(interval: MembershipPlan["billing_interval"]) {
-  return interval === "yearly" ? 12 : interval === "quarterly" ? 3 : 1
+export function addBillingInterval(date: Date, interval: MembershipPlan["billing_interval"]) {
+  const result = new Date(date)
+  if (interval === "daily") result.setDate(result.getDate() + 1)
+  if (interval === "weekly") result.setDate(result.getDate() + 7)
+  if (interval === "monthly") result.setMonth(result.getMonth() + 1)
+  return result.toISOString()
 }
 
 export function validateMembershipFields(input: Record<string, unknown>) {

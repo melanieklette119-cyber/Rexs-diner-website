@@ -1130,7 +1130,7 @@ const [discountCodes, setDiscountCodes] = useState<DiscountCode[]>([])
     setMembershipForm({
       name: plan.name,
       description: plan.description || "",
-      price: String(plan.price),
+      price: String(Math.round(Number(plan.price))),
       billing_interval: plan.billing_interval,
       min_duration_months: String(plan.min_duration_months),
       cancellation_notice_months: String(plan.cancellation_notice_months),
@@ -5676,9 +5676,9 @@ const [discountCodes, setDiscountCodes] = useState<DiscountCode[]>([])
                           id="membership-price"
                           type="number"
                           min="0"
-                          step="0.01"
+                          step="1"
                           value={membershipForm.price}
-                          onChange={(e) => setMembershipForm({ ...membershipForm, price: e.target.value })}
+                          onChange={(e) => setMembershipForm({ ...membershipForm, price: e.target.value.replace(/\D/g, "") })}
                         />
                       </div>
                     </div>
@@ -5703,9 +5703,9 @@ const [discountCodes, setDiscountCodes] = useState<DiscountCode[]>([])
                           onChange={(e) => setMembershipForm({ ...membershipForm, billing_interval: e.target.value as MembershipPlan["billing_interval"] })}
                           className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                         >
+                          <option value="daily">Täglich</option>
+                          <option value="weekly">Wöchentlich</option>
                           <option value="monthly">Monatlich</option>
-                          <option value="quarterly">Vierteljährlich</option>
-                          <option value="yearly">Jährlich</option>
                         </select>
                       </div>
                       <div>
@@ -5793,14 +5793,14 @@ const [discountCodes, setDiscountCodes] = useState<DiscountCode[]>([])
                         <CardHeader className="flex-row items-start justify-between space-y-0">
                           <div>
                             <CardTitle>{plan.name}</CardTitle>
-                            <p className="mt-1 text-2xl font-bold">{Number(plan.price).toFixed(2)} €</p>
+                            <p className="mt-1 text-2xl font-bold">{Math.round(Number(plan.price))} €</p>
                           </div>
                           <Badge variant={plan.active ? "default" : "secondary"}>{plan.active ? "Aktiv" : "Deaktiviert"}</Badge>
                         </CardHeader>
                         <CardContent className="space-y-3">
                           <p className="text-sm text-muted-foreground">{plan.description || "Keine Beschreibung"}</p>
                           <div className="grid grid-cols-2 gap-2 text-sm text-muted-foreground">
-                            <span>Intervall: {plan.billing_interval === "monthly" ? "monatlich" : plan.billing_interval === "quarterly" ? "vierteljährlich" : "jährlich"}</span>
+                            <span>Intervall: {plan.billing_interval === "daily" ? "täglich" : plan.billing_interval === "weekly" ? "wöchentlich" : "monatlich"}</span>
                             <span>Mindestlaufzeit: {plan.min_duration_months} Mon.</span>
                             <span>Kündigungsfrist: {plan.cancellation_notice_months} Mon.</span>
                             <span>{plan.includes_discount ? `${plan.discount_percent ?? 0}% Rabatt` : "Kein Rabatt"}</span>
