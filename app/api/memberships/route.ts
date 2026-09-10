@@ -21,6 +21,14 @@ export async function GET(request: Request) {
       const supabase = await createClient()
       if (!supabase) throw new Error("Supabase ist nicht verfügbar.")
 
+      const now = new Date().toISOString()
+      await supabase
+        .from("membership_contracts")
+        .update({ status: "cancelled", updated_at: now })
+        .eq("user_id", discordId)
+        .eq("status", "pending_cancellation")
+        .lte("minimum_end_at", now)
+
       const { data, error } = await supabase
         .from("membership_contracts")
         .select("*, membership_plans(*)")
@@ -87,7 +95,7 @@ export async function POST(request: Request) {
         discord_id: fields.discordId,
         fivem_bank_account_id: fields.bankAccountId,
         minimum_end_at: addMonths(now, months),
-        next_charge_at: addBillingInterval(now, plan.billing_interval),
+        next_charge_at: now.toISOString(),
         billing_interval: plan.billing_interval,
       })
       .select()
