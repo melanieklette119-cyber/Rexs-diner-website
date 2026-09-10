@@ -88,6 +88,7 @@ import {
 } from "@/lib/user-data"
 
 import { clearDiscordSession } from "@/lib/discord-session"
+import type { MembershipPlan } from "@/lib/membership"
 
 const RANKS = DEFAULT_RANKS
 
@@ -781,6 +782,25 @@ const [discountCodes, setDiscountCodes] = useState<DiscountCode[]>([])
   const [newDiscountValidUntil, setNewDiscountValidUntil] = useState("")
   const [newDiscountMaxUsages, setNewDiscountMaxUsages] = useState(1)
 
+  // Mitgliedschaften
+  const [membershipPlans, setMembershipPlans] = useState<MembershipPlan[]>([])
+  const [membershipLoading, setMembershipLoading] = useState(false)
+  const [membershipError, setMembershipError] = useState("")
+  const [membershipSaving, setMembershipSaving] = useState(false)
+  const [editingMembershipId, setEditingMembershipId] = useState<string | null>(null)
+  const [membershipForm, setMembershipForm] = useState({
+    name: "",
+    description: "",
+    price: "0",
+    billing_interval: "monthly" as MembershipPlan["billing_interval"],
+    min_duration_months: "1",
+    cancellation_notice_months: "0",
+    newcomer_only: false,
+    includes_discount: false,
+    discount_percent: "10",
+    active: true,
+  })
+
   // Dienstvorschriften Bestätigung
   const [dienstvorschriftenAcknowledged, setDienstvorschriftenAcknowledged] = useState(false)
 
@@ -1023,6 +1043,96 @@ const [discountCodes, setDiscountCodes] = useState<DiscountCode[]>([])
     }
   }
 
+  const resetMembershipForm = () => {
+    setEditingMembershipId(null)
+    setMembershipForm({
+      name: "",
+      description: "",
+      price: "0",
+      billing_interval: "monthly",
+      min_duration_months: "1",
+      cancellation_notice_months: "0",
+      newcomer_only: false,
+      includes_discount: false,
+      discount_percent: "10",
+      active: true,
+    })
+  }
+
+  const loadMembershipPlans = async () => {
+    setMembershipLoading(true)
+    setMembershipError("")
+    try {
+      const response = await fetch("/api/admin/memberships")
+      const data = await response.json().catch(() => ({}))
+      if (!response.ok) throw new Error(data.error || "Mitgliedschaften konnten nicht geladen werden.")
+      setMembershipPlans(data.plans ?? [])
+    } catch (error) {
+      setMembershipError(error instanceof Error ? error.message : "Mitgliedschaften konnten nicht geladen werden.")
+    } finally {
+      setMembershipLoading(false)
+    }
+  }
+
+  const saveMembershipPlan = async () => {
+    if (!membershipForm.name.trim()) {
+      setMembershipError("Bitte einen Namen für die Mitgliedschaft eingeben.")
+      return
+    }
+
+    setMembershipSaving(true)
+    setMembershipError("")
+    try {
+      const response = await fetch("/api/admin/memberships", {
+        method: editingMembershipId ? "PATCH" : "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...(editingMembershipId ? { id: editingMembershipId } : {}),
+          ...membershipForm,
+          price: Number(membershipForm.price),
+          min_duration_months: Number(membershipForm.min_duration_months),
+          cancellation_notice_months: Number(membershipForm.cancellation_notice_months),
+          discount_percent: Number(membershipForm.discount_percent),
+        }),
+      })
+      const data = await response.json().catch(() => ({}))
+      if (!response.ok) throw new Error(data.error || "Mitgliedschaft konnte nicht gespeichert werden.")
+      await loadMembershipPlans()
+      resetMembershipForm()
+    } catch (error) {
+      setMembershipError(error instanceof Error ? error.message : "Mitgliedschaft konnte nicht gespeichert werden.")
+    } finally {
+      setMembershipSaving(false)
+    }
+  }
+
+  const deleteMembershipPlan = async (id: string) => {
+    if (!confirm("Diese Mitgliedschaft wirklich löschen? Bestehende Verträge können das Löschen verhindern.")) return
+    const response = await fetch(`/api/admin/memberships?id=${encodeURIComponent(id)}`, { method: "DELETE" })
+    const data = await response.json().catch(() => ({}))
+    if (!response.ok) {
+      setMembershipError(data.error || "Mitgliedschaft konnte nicht gelöscht werden.")
+      return
+    }
+    setMembershipPlans((plans) => plans.filter((plan) => plan.id !== id))
+  }
+
+  const editMembershipPlan = (plan: MembershipPlan) => {
+    setEditingMembershipId(plan.id)
+    setMembershipForm({
+      name: plan.name,
+      description: plan.description || "",
+      price: String(plan.price),
+      billing_interval: plan.billing_interval,
+      min_duration_months: String(plan.min_duration_months),
+      cancellation_notice_months: String(plan.cancellation_notice_months),
+      newcomer_only: plan.newcomer_only,
+      includes_discount: plan.includes_discount,
+      discount_percent: String(plan.discount_percent ?? 10),
+      active: plan.active,
+    })
+  }
+
   // Rabattcodes speichern
   const saveDiscountCodesToStorage = async (codes: typeof discountCodes) => {
     try {
@@ -1219,6 +1329,9 @@ const [discountCodes, setDiscountCodes] = useState<DiscountCode[]>([])
     }
     if (activeTab === "rabattcodes") {
       loadDiscountCodes()
+    }
+    if (activeTab === "mitgliedschaften") {
+      loadMembershipPlans()
     }
   }, [activeTab, userGroup, customRanks])
 
@@ -5511,6 +5624,190 @@ const [discountCodes, setDiscountCodes] = useState<DiscountCode[]>([])
                         </div>
                       </CardContent>
                     </Card>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {activeTab === "mitgliedschaften" && hasPermission("memberships_manage") && (
+              <div className="space-y-6">
+                <div className="flex flex-wrap items-center justify-between gap-4">
+                  <div>
+                    <h2 className="text-2xl font-bold text-foreground">Mitgliedschaften verwalten</h2>
+                    <p className="text-muted-foreground">Erstelle und bearbeite die Mitgliedschaftsstufen für deine Website.</p>
+                  </div>
+                  <Button variant="outline" onClick={loadMembershipPlans} disabled={membershipLoading}>
+                    {membershipLoading ? "Lädt..." : "Aktualisieren"}
+                  </Button>
+                </div>
+
+                {membershipError && (
+                  <Card className="border-destructive/50 bg-destructive/10">
+                    <CardContent className="p-4 text-sm text-destructive">{membershipError}</CardContent>
+                  </Card>
+                )}
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle>{editingMembershipId ? "Mitgliedschaft bearbeiten" : "Neue Mitgliedschaft erstellen"}</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <div>
+                        <Label htmlFor="membership-name">Name</Label>
+                        <Input
+                          id="membership-name"
+                          value={membershipForm.name}
+                          onChange={(e) => setMembershipForm({ ...membershipForm, name: e.target.value })}
+                          placeholder="z. B. Gold-Mitgliedschaft"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="membership-price">Preis pro Abrechnungszeitraum</Label>
+                        <Input
+                          id="membership-price"
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={membershipForm.price}
+                          onChange={(e) => setMembershipForm({ ...membershipForm, price: e.target.value })}
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <Label htmlFor="membership-description">Beschreibung</Label>
+                      <Textarea
+                        id="membership-description"
+                        value={membershipForm.description}
+                        onChange={(e) => setMembershipForm({ ...membershipForm, description: e.target.value })}
+                        placeholder="Welche Vorteile bietet diese Stufe?"
+                        rows={3}
+                      />
+                    </div>
+
+                    <div className="grid gap-4 md:grid-cols-3">
+                      <div>
+                        <Label htmlFor="membership-interval">Abrechnungsintervall</Label>
+                        <select
+                          id="membership-interval"
+                          value={membershipForm.billing_interval}
+                          onChange={(e) => setMembershipForm({ ...membershipForm, billing_interval: e.target.value as MembershipPlan["billing_interval"] })}
+                          className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                        >
+                          <option value="monthly">Monatlich</option>
+                          <option value="quarterly">Vierteljährlich</option>
+                          <option value="yearly">Jährlich</option>
+                        </select>
+                      </div>
+                      <div>
+                        <Label htmlFor="membership-min-duration">Mindestlaufzeit (Monate)</Label>
+                        <Input
+                          id="membership-min-duration"
+                          type="number"
+                          min="1"
+                          value={membershipForm.min_duration_months}
+                          onChange={(e) => setMembershipForm({ ...membershipForm, min_duration_months: e.target.value })}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="membership-notice">Kündigungsfrist (Monate)</Label>
+                        <Input
+                          id="membership-notice"
+                          type="number"
+                          min="0"
+                          value={membershipForm.cancellation_notice_months}
+                          onChange={(e) => setMembershipForm({ ...membershipForm, cancellation_notice_months: e.target.value })}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex flex-wrap gap-6">
+                      <label className="flex items-center gap-2 text-sm">
+                        <input
+                          type="checkbox"
+                          checked={membershipForm.newcomer_only}
+                          onChange={(e) => setMembershipForm({ ...membershipForm, newcomer_only: e.target.checked })}
+                        />
+                        Nur für Neukunden
+                      </label>
+                      <label className="flex items-center gap-2 text-sm">
+                        <input
+                          type="checkbox"
+                          checked={membershipForm.includes_discount}
+                          onChange={(e) => setMembershipForm({ ...membershipForm, includes_discount: e.target.checked })}
+                        />
+                        Rabatt enthalten
+                      </label>
+                      {membershipForm.includes_discount && (
+                        <div className="flex items-center gap-2">
+                          <Label htmlFor="membership-discount">Rabatt (%)</Label>
+                          <Input
+                            id="membership-discount"
+                            className="w-24"
+                            type="number"
+                            min="0"
+                            max="100"
+                            value={membershipForm.discount_percent}
+                            onChange={(e) => setMembershipForm({ ...membershipForm, discount_percent: e.target.value })}
+                          />
+                        </div>
+                      )}
+                      <label className="flex items-center gap-2 text-sm">
+                        <input
+                          type="checkbox"
+                          checked={membershipForm.active}
+                          onChange={(e) => setMembershipForm({ ...membershipForm, active: e.target.checked })}
+                        />
+                        Auf der Website anzeigen
+                      </label>
+                    </div>
+
+                    <div className="flex gap-2">
+                      <Button onClick={saveMembershipPlan} disabled={membershipSaving}>
+                        {membershipSaving ? "Speichert..." : editingMembershipId ? "Änderungen speichern" : "Mitgliedschaft erstellen"}
+                      </Button>
+                      {editingMembershipId && (
+                        <Button variant="outline" onClick={resetMembershipForm}>Abbrechen</Button>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {membershipLoading && membershipPlans.length === 0 ? (
+                  <Card><CardContent className="p-8 text-center text-muted-foreground">Mitgliedschaften werden geladen...</CardContent></Card>
+                ) : membershipPlans.length === 0 ? (
+                  <Card><CardContent className="p-8 text-center text-muted-foreground">Noch keine Mitgliedschaften angelegt.</CardContent></Card>
+                ) : (
+                  <div className="grid gap-4 md:grid-cols-2">
+                    {membershipPlans.map((plan) => (
+                      <Card key={plan.id} className={!plan.active ? "opacity-60" : ""}>
+                        <CardHeader className="flex-row items-start justify-between space-y-0">
+                          <div>
+                            <CardTitle>{plan.name}</CardTitle>
+                            <p className="mt-1 text-2xl font-bold">{Number(plan.price).toFixed(2)} €</p>
+                          </div>
+                          <Badge variant={plan.active ? "default" : "secondary"}>{plan.active ? "Aktiv" : "Deaktiviert"}</Badge>
+                        </CardHeader>
+                        <CardContent className="space-y-3">
+                          <p className="text-sm text-muted-foreground">{plan.description || "Keine Beschreibung"}</p>
+                          <div className="grid grid-cols-2 gap-2 text-sm text-muted-foreground">
+                            <span>Intervall: {plan.billing_interval === "monthly" ? "monatlich" : plan.billing_interval === "quarterly" ? "vierteljährlich" : "jährlich"}</span>
+                            <span>Mindestlaufzeit: {plan.min_duration_months} Mon.</span>
+                            <span>Kündigungsfrist: {plan.cancellation_notice_months} Mon.</span>
+                            <span>{plan.includes_discount ? `${plan.discount_percent ?? 0}% Rabatt` : "Kein Rabatt"}</span>
+                          </div>
+                          <div className="flex gap-2 pt-2">
+                            <Button size="sm" variant="outline" onClick={() => editMembershipPlan(plan)}>
+                              <Edit className="mr-1 h-4 w-4" /> Bearbeiten
+                            </Button>
+                            <Button size="sm" variant="outline" className="text-destructive" onClick={() => deleteMembershipPlan(plan.id)}>
+                              <Trash2 className="mr-1 h-4 w-4" /> Löschen
+                            </Button>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
                   </div>
                 )}
               </div>
