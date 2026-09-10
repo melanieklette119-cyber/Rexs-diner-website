@@ -148,20 +148,14 @@ export async function PATCH(request: Request) {
 
     if (body.action === "cancel") {
       const minimumEnd = new Date(contract.minimum_end_at)
-
-      if (minimumEnd > new Date()) {
-        return NextResponse.json(
-          { error: `Kündigung ist erst ab ${minimumEnd.toLocaleDateString("de-DE")} möglich.` },
-          { status: 409 }
-        )
-      }
+      const now = new Date()
 
       const { error } = await supabase
         .from("membership_contracts")
         .update({
-          status: "pending_cancellation",
-          cancellation_requested_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
+          status: minimumEnd <= now ? "cancelled" : "pending_cancellation",
+          cancellation_requested_at: now.toISOString(),
+          updated_at: now.toISOString(),
         })
         .eq("id", contract.id)
         .eq("user_id", discordId)
