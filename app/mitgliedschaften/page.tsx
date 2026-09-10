@@ -7,16 +7,44 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Badge } from "@/components/ui/badge"
+import { LogIn } from "lucide-react"
+import { getDiscordSession } from "@/lib/discord-session"
 
 type Plan = { id: string; name: string; description: string; price: number; billing_interval: string; min_duration_months: number; cancellation_notice_months: number; newcomer_only: boolean; includes_discount: boolean; discount_percent: number | null }
 
 export default function MitgliedschaftenPage() {
+  const [discordUser, setDiscordUser] = useState<{ id: string; username: string; avatar: string } | null>(null)
   const [plans, setPlans] = useState<Plan[]>([])
   const [selected, setSelected] = useState<Plan | null>(null)
   const [form, setForm] = useState({ fullName: "", discordId: "", bankAccountId: "" })
   const [accepted, setAccepted] = useState(false)
   const [message, setMessage] = useState("")
+  useEffect(() => { setDiscordUser(getDiscordSession()) }, [])
   useEffect(() => { fetch("/api/memberships").then((r) => r.json()).then((d) => setPlans(d.plans ?? [])) }, [])
+  if (!discordUser) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Card className="max-w-md w-full mx-4 bg-card border-border">
+          <CardContent className="p-8 text-center space-y-6">
+            <div className="w-20 h-20 rounded-full bg-[#5865F2]/10 flex items-center justify-center mx-auto">
+              <LogIn className="h-10 w-10 text-[#5865F2]" />
+            </div>
+            <div>
+              <h2 className="text-2xl font-bold text-card-foreground mb-2">Discord Anmeldung erforderlich</h2>
+              <p className="text-muted-foreground">Um eine Mitgliedschaft abzuschließen, melden Sie sich bitte mit Ihrem Discord-Account an.</p>
+            </div>
+            <Button
+              onClick={() => { window.location.href = "/api/auth/discord?returnTo=/mitgliedschaften" }}
+              className="w-full bg-[#5865F2] hover:bg-[#4752C4] text-white py-6 text-lg"
+            >
+              <LogIn className="h-5 w-5 mr-2" />
+              Mit Discord anmelden
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
   async function subscribe() {
     if (!selected || !accepted) return setMessage("Bitte Stufe auswählen und Vertrag bestätigen.")
     const response = await fetch("/api/memberships", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ planId: selected.id, ...form }) })
