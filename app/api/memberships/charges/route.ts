@@ -57,7 +57,10 @@ export async function POST(request: Request) {
     for (let index = 0; index < chargeIntervals; index += 1) {
       next = new Date(addBillingInterval(next, plan?.billing_interval as MembershipPlan["billing_interval"]))
     }
-    const updates = { next_charge_at: next.toISOString(), updated_at: new Date().toISOString() } as Record<string, string>
+    const updates: { next_charge_at: string; updated_at: string; status?: string } = {
+      next_charge_at: next.toISOString(),
+      updated_at: new Date().toISOString(),
+    }
     if (contract.status === "pending_cancellation" && new Date(next) >= new Date(contract.minimum_end_at)) updates.status = "cancelled"
     await supabase.from("membership_contracts").update(updates).eq("id", contract.id)
   }
