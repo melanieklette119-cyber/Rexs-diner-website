@@ -4,7 +4,6 @@ local Config = {
   intervalMs = 60 * 60 * 1000
 }
 
--- Replace this hook with your framework's bank API.
 local function chargeBankAccount(bankAccountId, amount)
   print(('[membership] TEST MODE: would charge %s %.2f'):format(bankAccountId, amount))
   return true
