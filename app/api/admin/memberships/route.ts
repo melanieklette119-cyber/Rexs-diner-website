@@ -7,12 +7,12 @@ async function requireAdmin(request: Request) {
   if (!discordId) return null
   const supabase = await createClient()
   if (!supabase) return null
-  const { data } = await supabase.from("users").select("id, role, permissions").eq("discord_user_id", discordId).maybeSingle()
+  const { data } = await supabase.from("users").select("id, role, user_group").eq("discord_user_id", discordId).maybeSingle()
   if (!data) return null
   const role = String(data.role ?? "").toLowerCase()
-  const permissions = Array.isArray(data.permissions) ? data.permissions : []
-  const isOwner = role === "owner" || permissions.includes("all")
-  const canManageMemberships = isOwner || permissions.includes("memberships_manage")
+  const userGroup = String(data.user_group ?? "").toLowerCase()
+  const isOwner = role === "owner" || userGroup === "owner"
+  const canManageMemberships = isOwner
   if (!canManageMemberships) return null
   return supabase
 }
