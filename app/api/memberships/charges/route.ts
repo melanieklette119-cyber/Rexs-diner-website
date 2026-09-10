@@ -22,17 +22,37 @@ export async function GET(request: Request) {
   const supabase = await createClient()
   if (!supabase) return NextResponse.json({ error: "Supabase ist nicht verfügbar." }, { status: 503 })
   const now = new Date()
+
+  const discordId = new URL(request.url).searchParams.get("discordId")?.trim()
+  if (discordId) {
+    const escapedDiscordId = discordId.replace(/([(),])/g, "\\$1")
+    const { data, error } = await supabase
+      .from("membership_contracts")
+      .select("id, status, next_charge_at, minimum_end_at, membership_plans(name, price, billing_interval)")
+      .or(`discord_id.eq.${escapedDiscordId},user_id.eq.${escapedDiscordId}`)
+      .in("status", ["active", "pending_cancellation"])
+      .order("next_charge_at", { ascending: true })
+
+    if (error) return NextResponse.json({ error: "Mitgliedschaften konnten nicht geladen werden." }, { status: 500 })
+    const activeContracts = (data ?? []).filter((contract) =>
+      new Date(contract.minimum_end_at) > now
+    )
+    return NextResponse.json({ contracts: activeContracts })
+  }
+
   const { data, error } = await supabase.from("membership_contracts").select("id, status, discord_id, full_name, minimum_end_at, fivem_bank_account_id, next_charge_at, membership_plans(price, billing_interval)").in("status", ["active", "pending_cancellation"]).lte("next_charge_at", now.toISOString()).limit(100)
   if (error) return NextResponse.json({ error: "Fällige Abbuchungen konnten nicht geladen werden." }, { status: 500 })
   const due = (data ?? []).filter((charge) => charge.status === "active" || new Date(charge.next_charge_at) <= new Date(charge.minimum_end_at))
   const expired = (data ?? []).filter((charge) => charge.status === "pending_cancellation" && new Date(charge.minimum_end_at) <= now).map((charge) => charge.id)
   if (expired.length > 0) await supabase.from("membership_contracts").update({ status: "cancelled", updated_at: now.toISOString() }).in("id", expired)
-  return NextResponse.json({ charges: due.filter((charge) => !expired.includes(charge.id)).map((charge) => {
-    const plan = Array.isArray(charge.membership_plans) ? charge.membership_plans[0] : charge.membership_plans
-    const chargeIntervals = getDuePeriods(charge.next_charge_at, plan?.billing_interval as MembershipPlan["billing_interval"], now)
-    const chargeAmount = Number(plan?.price ?? 0) * chargeIntervals
-    return { ...charge, chargeIntervals, chargeAmount, idempotencyKey: `membership-${charge.id}-${charge.next_charge_at}-${chargeIntervals}` }
-  }) })
+  return NextResponse.json({
+    charges: due.filter((charge) => !expired.includes(charge.id)).map((charge) => {
+      const plan = Array.isArray(charge.membership_plans) ? charge.membership_plans[0] : charge.membership_plans
+      const chargeIntervals = getDuePeriods(charge.next_charge_at, plan?.billing_interval as MembershipPlan["billing_interval"], now)
+      const chargeAmount = Number(plan?.price ?? 0) * chargeIntervals
+      return { ...charge, chargeIntervals, chargeAmount, idempotencyKey: `membership-${charge.id}-${charge.next_charge_at}-${chargeIntervals}` }
+    })
+  })
 }
 
 export async function POST(request: Request) {
