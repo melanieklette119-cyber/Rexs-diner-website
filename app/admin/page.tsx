@@ -1063,7 +1063,9 @@ const [discountCodes, setDiscountCodes] = useState<DiscountCode[]>([])
     setMembershipLoading(true)
     setMembershipError("")
     try {
-      const response = await fetch("/api/admin/memberships")
+      const response = await fetch("/api/admin/memberships", {
+        headers: { "x-admin-username": localStorage.getItem("currentUser") || "" },
+      })
       const data = await response.json().catch(() => ({}))
       if (!response.ok) throw new Error(data.error || "Mitgliedschaften konnten nicht geladen werden.")
       setMembershipPlans(data.plans ?? [])
@@ -1085,7 +1087,10 @@ const [discountCodes, setDiscountCodes] = useState<DiscountCode[]>([])
     try {
       const response = await fetch("/api/admin/memberships", {
         method: editingMembershipId ? "PATCH" : "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "x-admin-username": localStorage.getItem("currentUser") || "",
+        },
         body: JSON.stringify({
           ...(editingMembershipId ? { id: editingMembershipId } : {}),
           ...membershipForm,
@@ -1108,7 +1113,10 @@ const [discountCodes, setDiscountCodes] = useState<DiscountCode[]>([])
 
   const deleteMembershipPlan = async (id: string) => {
     if (!confirm("Diese Mitgliedschaft wirklich löschen? Bestehende Verträge können das Löschen verhindern.")) return
-    const response = await fetch(`/api/admin/memberships?id=${encodeURIComponent(id)}`, { method: "DELETE" })
+    const response = await fetch(`/api/admin/memberships?id=${encodeURIComponent(id)}`, {
+      method: "DELETE",
+      headers: { "x-admin-username": localStorage.getItem("currentUser") || "" },
+    })
     const data = await response.json().catch(() => ({}))
     if (!response.ok) {
       setMembershipError(data.error || "Mitgliedschaft konnte nicht gelöscht werden.")

@@ -4,10 +4,14 @@ import { getDiscordIdFromRequest } from "@/lib/membership"
 
 async function requireAdmin(request: Request) {
   const discordId = getDiscordIdFromRequest(request)
-  if (!discordId) return null
+  const username = request.headers.get("x-admin-username")?.trim()
+  if (!discordId && !username) return null
   const supabase = await createClient()
   if (!supabase) return null
-  const { data } = await supabase.from("users").select("id, role, user_group").eq("discord_user_id", discordId).maybeSingle()
+  const query = supabase.from("users").select("id, role, user_group")
+  const { data } = discordId
+    ? await query.eq("discord_user_id", discordId).maybeSingle()
+    : await query.eq("username", username).maybeSingle()
   if (!data) return null
   const role = String(data.role ?? "").toLowerCase()
   const userGroup = String(data.user_group ?? "").toLowerCase()
