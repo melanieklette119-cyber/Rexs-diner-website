@@ -5620,7 +5620,7 @@ const [discountCodes, setDiscountCodes] = useState<DiscountCode[]>([])
                     <div>
                       <h4 className="font-semibold mb-2">1. Notfallplan</h4>
                       <ul className="list-disc list-inside space-y-1 text-sm">
-                        <li>Notausgänge m��ssen bekannt sein</li>
+                        <li>Notausgänge müssen bekannt sein</li>
                         <li>Erste-Hilfe-Ausrüstung ist im Restaurant vorhanden</li>
                         <li>Evakuierungsplan wird bei Einstellung besprochen</li>
                         <li>Im Notfall ruhig bleiben und Anweisungen des Managers folgen</li>
@@ -5757,7 +5757,7 @@ const [discountCodes, setDiscountCodes] = useState<DiscountCode[]>([])
                       <h3 className="text-lg font-semibold text-card-foreground mb-2">Dienstgrad-Hierarchie Regeln</h3>
                       <ul className="space-y-2 text-sm text-muted-foreground">
                         <li>• Höhere Level können niedrigere Level bearbeiten und verwalten</li>
-                        <li>�� Nur der Owner (Level 100) kann alle Dienstgrade verwalten</li>
+                        <li>• Nur der Owner (Level 100) kann alle Dienstgrade verwalten</li>
                         <li>• Mitarbeiter können ihren eigenen Dienstgrad nicht ändern</li>
                         <li>• Dienstgrad-Definitionen können nur vom Owner geändert werden</li>
                       </ul>
