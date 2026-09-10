@@ -94,6 +94,7 @@ export async function POST(request: Request) {
         full_name: fields.fullName,
         discord_id: fields.discordId,
         fivem_bank_account_id: fields.bankAccountId,
+        status: "active",
         minimum_end_at: addMonths(now, months),
         next_charge_at: now.toISOString(),
         billing_interval: plan.billing_interval,
