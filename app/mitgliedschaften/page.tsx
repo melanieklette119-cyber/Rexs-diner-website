@@ -19,7 +19,17 @@ export default function MitgliedschaftenPage() {
   const [form, setForm] = useState({ fullName: "", discordId: "", bankAccountId: "" })
   const [accepted, setAccepted] = useState(false)
   const [message, setMessage] = useState("")
-  useEffect(() => { setDiscordUser(getDiscordSession()) }, [])
+  useEffect(() => {
+    const session = getDiscordSession()
+    setDiscordUser(session)
+    if (session) {
+      setForm((prev) => ({
+        ...prev,
+        discordId: session.id,
+        fullName: session.username || prev.fullName,
+      }))
+    }
+  }, [])
   useEffect(() => { fetch("/api/memberships").then((r) => r.json()).then((d) => setPlans(d.plans ?? [])) }, [])
   if (!discordUser) {
     return (
