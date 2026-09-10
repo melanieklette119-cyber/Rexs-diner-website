@@ -5757,7 +5757,7 @@ const [discountCodes, setDiscountCodes] = useState<DiscountCode[]>([])
                       <h3 className="text-lg font-semibold text-card-foreground mb-2">Dienstgrad-Hierarchie Regeln</h3>
                       <ul className="space-y-2 text-sm text-muted-foreground">
                         <li>• Höhere Level können niedrigere Level bearbeiten und verwalten</li>
-                        <li>�� Nur der Owner (Level 100) kann alle Dienstgrade verwalten</li>
+                        <li>• Nur der Owner (Level 100) kann alle Dienstgrade verwalten</li>
                         <li>• Mitarbeiter können ihren eigenen Dienstgrad nicht ändern</li>
                         <li>• Dienstgrad-Definitionen können nur vom Owner geändert werden</li>
                       </ul>
