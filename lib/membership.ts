@@ -1,4 +1,37 @@
-import { createClient } from "@/lib/supabase/server"
+import { createClient as createServerClient } from "@/lib/supabase/server"
+import { createClient } from "@supabase/supabase-js"
+
+const DISCORD_API = "https://discord.com/api/v10"
+
+export async function sendMembershipDM(discordId: string, content: string) {
+  if (!discordId || !content) return false
+  try {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    if (!supabaseUrl || !supabaseKey) return false
+    const configClient = createClient(supabaseUrl, supabaseKey)
+    const { data } = await configClient.from("website_config").select("config_key, config_value").eq("config_key", "discord_bot").maybeSingle()
+    const token = String((data?.config_value as { token?: string } | null)?.token ?? "")
+    if (!token) return false
+    const channelResponse = await fetch(`${DISCORD_API}/users/@me/channels`, {
+      method: "POST",
+      headers: { Authorization: `Bot ${token}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ recipient_id: discordId }),
+    })
+    if (!channelResponse.ok) return false
+    const channel = await channelResponse.json() as { id?: string }
+    if (!channel.id) return false
+    const messageResponse = await fetch(`${DISCORD_API}/channels/${channel.id}/messages`, {
+      method: "POST",
+      headers: { Authorization: `Bot ${token}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ content }),
+    })
+    return messageResponse.ok
+  } catch (error) {
+    console.error("[memberships] DM notification failed", error)
+    return false
+  }
+}
 
 export type MembershipPlan = {
   id: string
@@ -15,7 +48,7 @@ export type MembershipPlan = {
 }
 
 export async function getMembershipPlans() {
-  const supabase = await createClient()
+  const supabase = await createServerClient()
   if (!supabase) throw new Error("Supabase ist nicht verfügbar.")
   const { data, error } = await supabase.from("membership_plans").select("*").eq("active", true).order("price")
   if (error) throw error
@@ -23,7 +56,7 @@ export async function getMembershipPlans() {
 }
 
 export async function getMembershipPlan(id: string) {
-  const supabase = await createClient()
+  const supabase = await createServerClient()
   if (!supabase) throw new Error("Supabase ist nicht verfügbar.")
   const { data, error } = await supabase.from("membership_plans").select("*").eq("id", id).eq("active", true).single()
   if (error) throw error
