@@ -15,6 +15,7 @@ type Plan = { id: string; name: string; description: string; price: number; bill
 export default function MitgliedschaftenPage() {
   const [discordUser, setDiscordUser] = useState<{ id: string; username: string; avatar: string } | null>(null)
   const [plans, setPlans] = useState<Plan[]>([])
+  const [hasMembershipHistory, setHasMembershipHistory] = useState(false)
   const [selected, setSelected] = useState<Plan | null>(null)
   const [form, setForm] = useState({ fullName: "", discordId: "", bankAccountId: "" })
   const [accepted, setAccepted] = useState(false)
@@ -31,9 +32,12 @@ export default function MitgliedschaftenPage() {
       }
     }, [])
   useEffect(() => {
-    fetch("/api/memberships")
+    fetch("/api/memberships?mine=true").catch(() => fetch("/api/memberships"))
       .then((r) => r.json())
-      .then((d) => setPlans(Array.isArray(d.plans) ? d.plans : []))
+      .then((d) => {
+        setPlans(Array.isArray(d.plans) ? d.plans : [])
+        setHasMembershipHistory(Boolean(d.hasMembershipHistory))
+      })
   }, [])
   if (!discordUser) {
     return (
@@ -75,6 +79,13 @@ export default function MitgliedschaftenPage() {
         <h1 className="mt-3 text-4xl font-bold">Mitgliedschaften</h1>
         <p className="mt-3 text-muted-foreground">Wähle eine Stufe und verwalte dein Abo jederzeit.</p>
       </div>
+      {hasMembershipHistory && (
+        <Card className="mb-6 border-primary/30 bg-primary/5">
+          <CardContent className="p-4 text-sm text-muted-foreground">
+            Du hast bereits eine Mitgliedschaft oder Abo-Historie. Neukunden-Angebote werden deshalb nicht mehr angezeigt. Pro Konto kann nur eine Mitgliedschaft gleichzeitig aktiv sein.
+          </CardContent>
+        </Card>
+      )}
       <div className="grid gap-6 md:grid-cols-3">
         {plans.map((plan) => (
           <Card key={plan.id} className="flex flex-col">
@@ -88,7 +99,7 @@ export default function MitgliedschaftenPage() {
               </div>
               <p className="text-sm">Mindestlaufzeit: {Math.max(1, plan.min_duration_months)} Monat(e)</p>
               {plan.includes_discount && <Badge variant="secondary">{plan.discount_percent}% Rabatt inklusive</Badge>}
-              <Button className="mt-auto" onClick={() => setSelected(plan)}>Stufe auswählen</Button>
+              <Button className="mt-auto" onClick={() => setSelected(plan)} disabled={hasMembershipHistory && plan.newcomer_only}>Stufe auswählen</Button>
             </CardContent>
           </Card>
         ))}
