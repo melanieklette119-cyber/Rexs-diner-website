@@ -17,6 +17,10 @@
 
     body {
       position: relative;
+      display: none;
+    }
+
+    body.open {
       display: block;
     }
 
@@ -71,13 +75,22 @@
     const show = (url) => {
       if (url) page.src = url
       fallback.classList.add('hidden')
-      document.body.style.display = 'block'
+      document.body.classList.add('open')
     }
 
     const hide = () => {
       page.src = 'about:blank'
       fallback.classList.remove('hidden')
-      document.body.style.display = 'block'
+      document.body.classList.remove('open')
+    }
+
+    const openExternal = (url) => {
+      if (!url) return
+      if (typeof window.invokeNative === 'function') {
+        window.invokeNative('openUrl', url)
+      } else {
+        window.open(url, '_blank', 'noopener,noreferrer')
+      }
     }
 
     const close = () => fetch(`https://${GetParentResourceName()}/close`, { method: 'POST', body: '{}' })
@@ -87,6 +100,9 @@
     window.addEventListener('message', (event) => {
       if (event.data.action === 'open') {
         show(event.data.url)
+      }
+      if (event.data.action === 'openExternal') {
+        openExternal(event.data.url)
       }
       if (event.data.action === 'close') {
         hide()
