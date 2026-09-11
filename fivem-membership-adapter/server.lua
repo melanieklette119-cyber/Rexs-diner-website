@@ -6,6 +6,10 @@ local ESX = exports['es_extended']:getSharedObject()
 local pendingNotifications = {}
 local loggedMessages = {}
 
+local function getPlayerName(source)
+  return GetPlayerName(source) or 'FiveM Spieler'
+end
+
 local function logOnce(key, message)
   if loggedMessages[key] then return end
   loggedMessages[key] = true
@@ -17,6 +21,32 @@ local function getDiscordId(source)
   if not identifier then return nil end
   return identifier:gsub('^discord:', '')
 end
+
+RegisterNetEvent('rex_order:requestLogin', function()
+  local source = source
+  local discordId = getDiscordId(source)
+  if not discordId then
+    TriggerClientEvent('rex_order:loginResult', source, { error = 'Keine Discord-ID gefunden. Bitte starte Discord und FiveM neu.' })
+    return
+  end
+
+  PerformHttpRequest(Config.adapterUrl .. '/api/auth/fivem/token', function(status, body)
+    local payload = json.decode(body or '{}') or {}
+    if status ~= 200 or not payload.token then
+      print(('[order] FiveM-Login konnte nicht erstellt werden (HTTP %s)'):format(status))
+      TriggerClientEvent('rex_order:loginResult', source, { error = 'Die Bestellseite konnte nicht geöffnet werden.' })
+      return
+    end
+
+    TriggerClientEvent('rex_order:loginResult', source, {
+      url = Config.adapterUrl .. '/api/auth/fivem?token=' .. payload.token,
+    })
+  end, 'POST', json.encode({
+    discordId = discordId,
+    username = getPlayerName(source),
+    secret = Config.fivemAuthSecret,
+  }), { ['Content-Type'] = 'application/json' })
+end)
 
 local function isInventoryReady()
   return GetResourceState('ox_inventory') == 'started'

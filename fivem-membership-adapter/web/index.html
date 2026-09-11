@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Rex's Diner</title>
+  <style>
+    html, body, iframe { width: 100%; height: 100%; margin: 0; border: 0; background: #111; }
+    #close { position: fixed; top: 12px; right: 12px; z-index: 2; padding: 8px 12px; border: 0; border-radius: 4px; color: #fff; background: #222; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <button id="close" type="button">Schliessen</button>
+  <iframe id="page" title="Rex's Diner Bestellkarte"></iframe>
+  <script>
+    const page = document.getElementById('page')
+    const close = () => fetch(`https://${GetParentResourceName()}/close`, { method: 'POST', body: '{}' })
+    document.getElementById('close').addEventListener('click', close)
+    window.addEventListener('message', (event) => {
+      if (event.data.action === 'open') page.src = event.data.url
+      if (event.data.action === 'close') page.src = 'about:blank'
+    })
+    document.addEventListener('keyup', (event) => {
+      if (event.key === 'Escape') close()
+    })
+  </script>
+</body>
+</html>

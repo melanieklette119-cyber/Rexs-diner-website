@@ -48,3 +48,49 @@ RegisterNetEvent('rex_membership:accessResult', function(hasAccess)
     lib.notify({ title = "Rex's Diner", description = 'Du hast kein aktives Abo für diesen Bereich.', type = 'error' })
   end
 end)
+
+CreateThread(function()
+  while GetResourceState('ox_target') ~= 'started' do
+    Wait(1000)
+  end
+
+  local target = Config.orderTarget
+  if not target or not target.coords or #(target.coords) < 0.1 then
+    print('[order] Config.orderTarget.coords muss auf den Rex-Diner-Standort gesetzt werden')
+    return
+  end
+
+  exports.ox_target:addBoxZone({
+    coords = target.coords,
+    size = target.size,
+    rotation = target.rotation,
+    debug = false,
+    options = {
+      {
+        name = 'rex_order_open',
+        icon = 'fa-solid fa-utensils',
+        label = 'Bestellkarte öffnen',
+        distance = target.distance,
+        onSelect = function()
+          TriggerServerEvent('rex_order:requestLogin')
+        end,
+      },
+    },
+  })
+end)
+
+RegisterNetEvent('rex_order:loginResult', function(result)
+  if result.error then
+    lib.notify({ title = "Rex's Diner", description = result.error, type = 'error' })
+    return
+  end
+
+  SetNuiFocus(true, true)
+  SendNUIMessage({ action = 'open', url = result.url })
+end)
+
+RegisterNUICallback('close', function(_, callback)
+  SetNuiFocus(false, false)
+  SendNUIMessage({ action = 'close' })
+  callback({ ok = true })
+end)
