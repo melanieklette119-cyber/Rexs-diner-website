@@ -118,6 +118,17 @@ export default function BestellenPage() {
     loadSessionAndProfile()
   }, [])
 
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    if (params.get("fivem") !== "1") return
+
+    setSelectedAddressId("1")
+    setCustomerInfo((prev) => ({
+      ...prev,
+      address: "Senora Way 3056 (Vorort)",
+    }))
+  }, [])
+
   // Warten bis Session geprüft wurde
   if (isCheckingSession) {
     return (
