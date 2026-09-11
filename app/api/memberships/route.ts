@@ -38,7 +38,13 @@ export async function GET(request: Request) {
 
       if (error) throw error
 
-      return NextResponse.json({ contracts: data ?? [] })
+      const contractIds = (data ?? []).map((contract) => contract.id)
+      const { data: charges, error: chargeError } = contractIds.length
+        ? await supabase.from("membership_charge_attempts").select("*").in("contract_id", contractIds).order("processed_at", { ascending: false })
+        : { data: [], error: null }
+      if (chargeError) throw chargeError
+
+      return NextResponse.json({ contracts: data ?? [], charges: charges ?? [], plans: await getMembershipPlans() })
     }
 
     return NextResponse.json({ plans: await getMembershipPlans() })
@@ -185,6 +191,10 @@ export async function PATCH(request: Request) {
     }
 
     const plan = await getMembershipPlan(String(body.planId ?? ""))
+    if (plan.newcomer_only) {
+      const { count } = await supabase.from("membership_contracts").select("id", { count: "exact", head: true }).eq("user_id", discordId)
+      if ((count ?? 0) > 0) return NextResponse.json({ error: "Dieses Abo ist nur für Neukunden verfügbar." }, { status: 400 })
+    }
 
     const { error } = await supabase
       .from("membership_contracts")
