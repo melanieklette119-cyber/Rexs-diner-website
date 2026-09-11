@@ -44,7 +44,10 @@ export async function GET(request: Request) {
         : { data: [], error: null }
       if (chargeError) throw chargeError
 
-      return NextResponse.json({ contracts: data ?? [], charges: charges ?? [], plans: await getMembershipPlans() })
+      const historyCount = (data ?? []).length
+      const visiblePlans = (await getMembershipPlans()).filter((plan) => !plan.newcomer_only || historyCount === 0)
+
+      return NextResponse.json({ contracts: data ?? [], charges: charges ?? [], plans: visiblePlans, hasMembershipHistory: historyCount > 0 })
     }
 
     return NextResponse.json({ plans: await getMembershipPlans() })
@@ -89,6 +92,25 @@ export async function POST(request: Request) {
 
     const supabase = await createClient()
     if (!supabase) throw new Error("Supabase ist nicht verfügbar.")
+
+    const { count: activeCount } = await supabase
+      .from("membership_contracts")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", discordId)
+      .in("status", ["active", "pending_cancellation"])
+    if ((activeCount ?? 0) > 0) {
+      return NextResponse.json({ error: "Du hast bereits eine aktive Mitgliedschaft. Kündige sie zuerst, bevor du ein neues Abo abschließt." }, { status: 409 })
+    }
+
+    if (plan.newcomer_only) {
+      const { count: historyCount } = await supabase
+        .from("membership_contracts")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", discordId)
+      if ((historyCount ?? 0) > 0) {
+        return NextResponse.json({ error: "Dieses Abo ist nur für Neukunden verfügbar." }, { status: 409 })
+      }
+    }
 
     const now = new Date()
     const months = Math.max(1, plan.min_duration_months)
