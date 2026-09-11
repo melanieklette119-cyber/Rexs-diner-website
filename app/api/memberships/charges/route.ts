@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
-import { addBillingInterval, type MembershipPlan } from "@/lib/membership"
+import { addBillingInterval, sendMembershipDM, type MembershipPlan } from "@/lib/membership"
 
 function getDuePeriods(nextChargeAt: string, interval: MembershipPlan["billing_interval"], now: Date) {
   let duePeriods = 1
@@ -44,7 +44,10 @@ export async function GET(request: Request) {
   if (error) return NextResponse.json({ error: "Fällige Abbuchungen konnten nicht geladen werden." }, { status: 500 })
   const due = (data ?? []).filter((charge) => charge.status === "active" || new Date(charge.next_charge_at) <= new Date(charge.minimum_end_at))
   const expired = (data ?? []).filter((charge) => charge.status === "pending_cancellation" && new Date(charge.minimum_end_at) <= now).map((charge) => charge.id)
-  if (expired.length > 0) await supabase.from("membership_contracts").update({ status: "cancelled", updated_at: now.toISOString() }).in("id", expired)
+  if (expired.length > 0) {
+    await supabase.from("membership_contracts").update({ status: "cancelled", updated_at: now.toISOString() }).in("id", expired)
+    await Promise.all((data ?? []).filter((charge) => expired.includes(charge.id)).map((charge) => sendMembershipDM(charge.discord_id, "Deine Mitgliedschaft wurde nach Ablauf der Mindestlaufzeit beendet.")))
+  }
   return NextResponse.json({
     charges: due.filter((charge) => !expired.includes(charge.id)).map((charge) => {
       const plan = Array.isArray(charge.membership_plans) ? charge.membership_plans[0] : charge.membership_plans
@@ -61,7 +64,7 @@ export async function POST(request: Request) {
   if (!body.contractId || !body.idempotencyKey || !["succeeded", "failed"].includes(body.status)) return NextResponse.json({ error: "Ungültiger Abbuchungsstatus." }, { status: 400 })
   const supabase = await createClient()
   if (!supabase) return NextResponse.json({ error: "Supabase ist nicht verfügbar." }, { status: 503 })
-  const { data: contract } = await supabase.from("membership_contracts").select("id, status, minimum_end_at, next_charge_at, fivem_bank_account_id, membership_plans(price, billing_interval)").eq("id", body.contractId).in("status", ["active", "pending_cancellation"]).single()
+  const { data: contract } = await supabase.from("membership_contracts").select("id, user_id, discord_id, status, minimum_end_at, next_charge_at, fivem_bank_account_id, membership_plans(price, billing_interval)").eq("id", body.contractId).in("status", ["active", "pending_cancellation"]).single()
   if (!contract) return NextResponse.json({ error: "Vertrag nicht gefunden." }, { status: 404 })
   if (contract.status === "pending_cancellation" && new Date(contract.minimum_end_at) <= new Date()) {
     await supabase.from("membership_contracts").update({ status: "cancelled", updated_at: new Date().toISOString() }).eq("id", contract.id)
@@ -72,6 +75,13 @@ export async function POST(request: Request) {
   const chargeAmount = Number(body.chargeAmount ?? plan?.price ?? 0)
   const { error } = await supabase.from("membership_charge_attempts").upsert({ contract_id: contract.id, idempotency_key: body.idempotencyKey, scheduled_for: contract.next_charge_at, status: body.status, amount: chargeAmount, fivem_bank_account_id: contract.fivem_bank_account_id, processed_at: new Date().toISOString(), error_message: body.errorMessage ?? null }, { onConflict: "idempotency_key" })
   if (error) return NextResponse.json({ error: "Abbuchungsergebnis konnte nicht gespeichert werden." }, { status: 500 })
+  void sendMembershipDM(
+    contract.discord_id ?? contract.user_id,
+    body.status === "succeeded"
+      ? `Die Abbuchung über ${chargeAmount.toFixed(2)} € für deine Mitgliedschaft war erfolgreich.`
+      : `Die Abbuchung über ${chargeAmount.toFixed(2)} € für deine Mitgliedschaft ist fehlgeschlagen. ${body.errorMessage ? `Grund: ${body.errorMessage}` : "Bitte prüfe dein FiveM-Bankkonto."}`,
+  )
+
   if (body.status === "succeeded") {
     let next = new Date(contract.next_charge_at)
     for (let index = 0; index < chargeIntervals; index += 1) {

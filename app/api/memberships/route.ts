@@ -8,6 +8,7 @@ import {
   getMembershipPlan,
   makeDiscountCode,
   validateMembershipFields,
+  sendMembershipDM,
 } from "@/lib/membership"
 
 export async function GET(request: Request) {
@@ -115,6 +116,8 @@ export async function POST(request: Request) {
       })
     }
 
+    void sendMembershipDM(discordId, `Deine Mitgliedschaft „${plan.name}" wurde erfolgreich gestartet. Die erste Abbuchung ist für ${new Date(contract.next_charge_at).toLocaleDateString("de-DE")} vorgemerkt.`)
+
     return NextResponse.json({ contract }, { status: 201 })
   } catch (error) {
     console.error("[memberships] POST failed", error)
@@ -170,6 +173,13 @@ export async function PATCH(request: Request) {
         .eq("user_id", discordId)
 
       if (error) throw error
+
+      void sendMembershipDM(
+        discordId,
+        minimumEnd <= now
+          ? `Deine Mitgliedschaft „${contract.membership_plans?.name ?? ""}" wurde beendet.`
+          : `Deine Mitgliedschaft „${contract.membership_plans?.name ?? ""}" wurde zur Beendigung vorgemerkt. Sie endet am ${minimumEnd.toLocaleDateString("de-DE")}.`,
+      )
 
       return NextResponse.json({ ok: true })
     }
