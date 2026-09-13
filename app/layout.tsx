@@ -34,7 +34,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`font-sans antialiased ${inter.variable}`}>
-        <FiveMThemeMarker />
+        <Suspense fallback={null}>
+          <FiveMThemeMarker />
+        </Suspense>
         <Navigation />
         {/* <DiscordSessionGuard /> */}
         <Suspense fallback={null}>{children}</Suspense>
