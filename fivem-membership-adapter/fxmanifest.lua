@@ -7,9 +7,9 @@ description 'FiveM membership billing adapter (test hook)'
 ui_page 'web/index.html'
 
 files {
-    'web/index.html',
-    'web/style.css',
-    'web/script.js'
+  'web/index.html',
+  'web/style.css',
+  'web/script.js'
 }
 
 server_scripts {
@@ -19,7 +19,7 @@ server_scripts {
 
 client_script { 
 	'client-config.lua',
-    'client.lua',
+  'client.lua',
 }
 
 shared_script {
