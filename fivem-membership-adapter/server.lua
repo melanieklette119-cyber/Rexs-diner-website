@@ -51,8 +51,9 @@ RegisterNetEvent('rex_order:requestLogin', function(requestedPath)
   PerformHttpRequest(Config.adapterUrl .. '/api/auth/fivem/token', function(status, body)
     local payload = json.decode(body or '{}') or {}
     if status ~= 200 or not payload.token then
-      print(('[order] FiveM-Login konnte nicht erstellt werden (HTTP %s)'):format(status))
-      TriggerClientEvent('rex_order:loginResult', source, { error = 'Die Bestellseite konnte nicht geöffnet werden.' })
+      local apiError = payload.error or 'Die Bestellseite konnte nicht geöffnet werden.'
+      print(('[order] FiveM-Login konnte nicht erstellt werden (HTTP %s): %s'):format(status, apiError))
+      TriggerClientEvent('rex_order:loginResult', source, { error = apiError })
       return
     end
 
