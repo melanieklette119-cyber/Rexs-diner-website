@@ -112,6 +112,8 @@ CREATE TABLE IF NOT EXISTS public.discount_codes (
   max_usages INTEGER DEFAULT 0,
   usage_count INTEGER DEFAULT 0,
   active BOOLEAN DEFAULT true,
+  owner_discord_id TEXT,
+  membership_contract_id BIGINT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
@@ -120,7 +122,9 @@ ALTER TABLE public.discount_codes
   ALTER COLUMN id TYPE TEXT USING id::text,
   ADD COLUMN IF NOT EXISTS valid_until TEXT,
   ADD COLUMN IF NOT EXISTS max_usages INTEGER DEFAULT 0,
-  ADD COLUMN IF NOT EXISTS usage_count INTEGER DEFAULT 0;
+  ADD COLUMN IF NOT EXISTS usage_count INTEGER DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS owner_discord_id TEXT,
+  ADD COLUMN IF NOT EXISTS membership_contract_id BIGINT;
 
 CREATE TABLE IF NOT EXISTS public.hausverbote (
   id BIGSERIAL PRIMARY KEY,

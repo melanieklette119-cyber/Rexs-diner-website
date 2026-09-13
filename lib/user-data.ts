@@ -1137,6 +1137,8 @@ export type DiscountCode = {
   usageCount: number
   createdAt?: number
   active?: boolean
+  ownerDiscordId?: string | null
+  membershipContractId?: number | null
 }
 
 export const saveDiscountCode = async (code: DiscountCode): Promise<boolean> => {
@@ -1151,6 +1153,8 @@ export const saveDiscountCode = async (code: DiscountCode): Promise<boolean> => 
     max_usages: code.maxUsages,
     usage_count: code.usageCount,
     active: code.active !== false,
+    owner_discord_id: code.ownerDiscordId ?? null,
+    membership_contract_id: code.membershipContractId ?? null,
   })
 
   if (error) {
@@ -1181,6 +1185,8 @@ export const getDiscountCodes = async (): Promise<DiscountCode[]> => {
     usageCount: c.usage_count,
     createdAt: new Date(c.created_at).getTime(),
     active: c.active,
+    ownerDiscordId: c.owner_discord_id,
+    membershipContractId: c.membership_contract_id,
   }))
 }
 
