@@ -1,6 +1,9 @@
 local tabletProp = nil
 local tabletAnimation = 'amb@world_human_seat_wall_tablet@female@base'
 local tabletAnimationName = 'base'
+local tabletPickupAnimation = 'amb@world_human_tourist_map@male@base'
+local tabletPickupAnimationName = 'base'
+local tabletOpening = false
 
 local function loadAsset(asset, isModel)
   if isModel then
@@ -15,7 +18,9 @@ end
 local function stopTabletEmote()
   local ped = PlayerPedId()
   StopAnimTask(ped, tabletAnimation, tabletAnimationName, 1.0)
+  StopAnimTask(ped, tabletPickupAnimation, tabletPickupAnimationName, 1.0)
   ClearPedSecondaryTask(ped)
+  tabletOpening = false
 
   if tabletProp and DoesEntityExist(tabletProp) then
     DeleteEntity(tabletProp)
@@ -27,13 +32,26 @@ local function startTabletEmote()
   local ped = PlayerPedId()
   stopTabletEmote()
 
+  loadAsset(tabletPickupAnimation, false)
   loadAsset(tabletAnimation, false)
   loadAsset(`prop_cs_tablet`, true)
 
   tabletProp = CreateObject(`prop_cs_tablet`, 1.0, 1.0, 1.0, true, true, false)
   AttachEntityToEntity(tabletProp, ped, GetPedBoneIndex(ped, 28422), 0.0, -0.03, 0.0, 20.0, 0.0, 0.0, true, true, false, true, 1, true)
   SetModelAsNoLongerNeeded(`prop_cs_tablet`)
-  TaskPlayAnim(ped, tabletAnimation, tabletAnimationName, 8.0, -8.0, -1, 49, 0.0, false, false, false)
+  tabletOpening = true
+  TaskPlayAnim(ped, tabletPickupAnimation, tabletPickupAnimationName, 8.0, -8.0, 1100, 49, 0.0, false, false, false)
+
+  CreateThread(function()
+    Wait(950)
+    if not tabletOpening or not tabletProp or not DoesEntityExist(tabletProp) then return end
+    TaskPlayAnim(ped, tabletAnimation, tabletAnimationName, 8.0, -8.0, -1, 49, 0.0, false, false, false)
+    Wait(180)
+    if tabletOpening then
+      SetNuiFocus(true, true)
+      SendNUIMessage({ action = 'open' })
+    end
+  end)
 end
 
 local function closeNui()
@@ -127,8 +145,6 @@ CreateThread(function()
         distance = target.distance,
         onSelect = function()
           startTabletEmote()
-          SetNuiFocus(true, true)
-          SendNUIMessage({ action = 'open' })
         end,
       },
     },
