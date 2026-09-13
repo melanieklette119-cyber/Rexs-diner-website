@@ -9,6 +9,7 @@ const progressBar = document.getElementById('progressBar');
 const oauthButton = document.getElementById('oauthButton');
 const swipeTrack = document.getElementById('swipeTrack');
 const swipeThumb = document.getElementById('swipeThumb');
+const debugMode = window.REX_DEBUG === true;
 let authUrl = null;
 let swipeStartY = null;
 let swipeUnlocked = false;
@@ -36,7 +37,8 @@ const showStatus = (title, copy, type = 'loading') => {
 
 const closeNui = () => {
     const panel = document.getElementById('googledocs');
-    panel?.classList.remove('visible');
+    if (!debugMode) panel?.classList.remove('visible');
+    if (typeof GetParentResourceName !== 'function') return;
     fetch(`https://${GetParentResourceName()}/NUIFocusOff`, {
         method: 'POST',
         headers: {
@@ -56,7 +58,7 @@ window.addEventListener('message', function(event) {
         } else if (data.url) {
             window.open(data.url, '_blank', 'noopener,noreferrer');
         }
-        panel.classList.remove('visible');
+        if (!debugMode) panel.classList.remove('visible');
         return;
     }
 
@@ -91,7 +93,7 @@ window.addEventListener('message', function(event) {
         return;
     }
 
-    panel.classList.remove('visible');
+    if (!debugMode) panel.classList.remove('visible');
 });
 
 document.onkeyup = function (data) {
@@ -133,3 +135,5 @@ oauthButton?.addEventListener('click', () => {
 
 const closeButton = document.getElementById('closeTablet');
 if (closeButton) closeButton.addEventListener('click', closeNui);
+
+if (debugMode) panel?.classList.add('visible');
