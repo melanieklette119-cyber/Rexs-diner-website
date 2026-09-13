@@ -106,8 +106,44 @@ document.onkeyup = function (data) {
     }
 };
 
+const playUnlockSound = () => {
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContext) return;
+
+    const audioContext = new AudioContext();
+    const now = audioContext.currentTime;
+    const master = audioContext.createGain();
+    master.gain.setValueAtTime(0.0001, now);
+    master.gain.exponentialRampToValueAtTime(0.16, now + 0.025);
+    master.gain.exponentialRampToValueAtTime(0.0001, now + 0.75);
+    master.connect(audioContext.destination);
+
+    const oscillator = audioContext.createOscillator();
+    oscillator.type = 'sine';
+    oscillator.frequency.setValueAtTime(420, now);
+    oscillator.frequency.exponentialRampToValueAtTime(920, now + 0.34);
+    oscillator.frequency.exponentialRampToValueAtTime(680, now + 0.7);
+    oscillator.connect(master);
+    oscillator.start(now);
+    oscillator.stop(now + 0.75);
+
+    const chime = audioContext.createOscillator();
+    const chimeGain = audioContext.createGain();
+    chime.type = 'triangle';
+    chime.frequency.setValueAtTime(980, now + 0.08);
+    chime.frequency.exponentialRampToValueAtTime(1480, now + 0.42);
+    chimeGain.gain.setValueAtTime(0.0001, now + 0.08);
+    chimeGain.gain.exponentialRampToValueAtTime(0.08, now + 0.13);
+    chimeGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.58);
+    chime.connect(chimeGain).connect(audioContext.destination);
+    chime.start(now + 0.08);
+    chime.stop(now + 0.6);
+    window.setTimeout(() => audioContext.close(), 1000);
+};
+
 const startAuthentication = () => {
     if (swipeUnlocked) return;
+    playUnlockSound();
     swipeUnlocked = true;
     lockScreen?.classList.add('unlocking');
     window.setTimeout(() => {
