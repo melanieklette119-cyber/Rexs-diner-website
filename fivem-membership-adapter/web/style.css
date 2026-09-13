@@ -18,13 +18,35 @@ body {
     backdrop-filter: none;
     visibility: hidden;
     opacity: 0;
-    transition: opacity 0.15s ease, visibility 0.15s ease;
+    transition: opacity 0.28s ease, visibility 0.28s ease;
     z-index: 9999;
 }
 
 #googledocs.visible {
     visibility: visible;
     opacity: 1;
+}
+
+#googledocs.visible .tablet-shell {
+    animation: tablet-rise-in 0.72s cubic-bezier(.16, 1, .3, 1) both;
+}
+
+@keyframes tablet-rise-in {
+    0% {
+        opacity: 0;
+        transform: translateY(110vh) scale(.96);
+        filter: brightness(.7);
+    }
+    68% {
+        opacity: 1;
+        transform: translateY(-10px) scale(1.005);
+        filter: brightness(1.08);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+        filter: brightness(1);
+    }
 }
 
 .tablet-shell {
