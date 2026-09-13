@@ -23,11 +23,26 @@ export async function GET(request: Request) {
     const supabase = await getAdminClient(request)
     if (!supabase) return NextResponse.json({ error: "Nicht autorisiert." }, { status: 403 })
     const query = new URL(request.url).searchParams.get("q")?.trim() ?? ""
-    let builder = supabase.from("users").select("id, username, discord_user_id, full_name").limit(20)
-    if (query) builder = builder.or(`username.ilike.%${query}%,discord_user_id.ilike.%${query}%,full_name.ilike.%${query}%`)
-    const { data, error } = await builder.order("username")
+    let builder = supabase
+      .from("user_profiles")
+      .select("id, discord_id, discord_username, full_name, avatar_url")
+      .not("discord_id", "is", null)
+      .neq("discord_id", "")
+      .limit(20)
+    if (query) {
+      const safeQuery = query.replace(/[(),]/g, " ")
+      builder = builder.or(`discord_username.ilike.%${safeQuery}%,discord_id.ilike.%${safeQuery}%,full_name.ilike.%${safeQuery}%`)
+    }
+    const { data, error } = await builder.order("discord_username")
+    const users = (data ?? []).map((profile) => ({
+      id: profile.id,
+      username: profile.discord_username,
+      discord_user_id: profile.discord_id,
+      full_name: profile.full_name,
+      avatar_url: profile.avatar_url,
+    }))
     if (error) throw error
-    return NextResponse.json({ users: data ?? [], plans: await getMembershipPlans() })
+    return NextResponse.json({ users, plans: await getMembershipPlans() })
   } catch (error) {
     console.error("[membership-gifts] GET failed", error)
     return NextResponse.json({ error: "Nutzer konnten nicht geladen werden." }, { status: 500 })
@@ -46,21 +61,21 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Bitte Empfänger, Mitgliedschaft und eine Dauer von 1 bis 36 Monaten angeben." }, { status: 422 })
     }
     const [{ data: recipient }, { data: plan }] = await Promise.all([
-      supabase.from("users").select("id, username, discord_user_id, full_name").eq("id", userId).single(),
+      supabase.from("user_profiles").select("id, discord_id, discord_username, full_name").eq("id", userId).single(),
       supabase.from("membership_plans").select("id, name").eq("id", planId).eq("active", true).single(),
     ])
-    if (!recipient?.discord_user_id || !plan) return NextResponse.json({ error: "Empfänger oder Mitgliedschaft nicht gefunden." }, { status: 404 })
+    if (!recipient?.discord_id || !plan) return NextResponse.json({ error: "Empfänger oder Mitgliedschaft nicht gefunden." }, { status: 404 })
     const token = randomBytes(32).toString("hex")
     const expiresAt = addMonths(new Date(), durationMonths).toISOString()
     const { data: gift, error } = await supabase.from("membership_gifts").insert({
-      token, recipient_user_id: recipient.id, recipient_discord_id: recipient.discord_user_id,
+      token, recipient_user_id: null, recipient_discord_id: recipient.discord_id,
       plan_id: plan.id, duration_months: durationMonths, ends_at: expiresAt, status: "pending",
       created_by: request.headers.get("x-admin-username")?.trim() ?? "admin",
     }).select().single()
     if (error) throw error
     const baseUrl = new URL(request.url).origin
     const giftUrl = `${baseUrl}/geschenk/${token}`
-    void sendMembershipDM(recipient.discord_user_id, {
+    void sendMembershipDM(recipient.discord_id, {
       title: "Du hast ein Geschenk bekommen",
       description: `Für dich wurde eine **${plan.name}** geschenkt. Öffne den Link, packe dein Geschenk aus und entscheide selbst, ob du es annimmst.`,
       color: 0xD4673E,
