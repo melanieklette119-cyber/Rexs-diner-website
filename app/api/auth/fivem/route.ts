@@ -10,7 +10,11 @@ export async function GET(request: NextRequest) {
   }
 
   const suffix = crypto.randomUUID()
-  const response = NextResponse.redirect(new URL("/bestellen?fivem=1", request.url))
+  const returnTo = request.nextUrl.searchParams.get("returnTo") || "/"
+  const safeReturnTo = returnTo.startsWith("/") && !returnTo.startsWith("//") ? returnTo : "/"
+  const destination = new URL(safeReturnTo, request.url)
+  destination.searchParams.set("fivem", "1")
+  const response = NextResponse.redirect(destination)
   const cookieOptions = {
     httpOnly: false,
     secure: process.env.NODE_ENV === "production",

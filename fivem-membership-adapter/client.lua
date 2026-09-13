@@ -1,10 +1,72 @@
+local tabletProp = nil
+local tabletAnimation = 'amb@world_human_seat_wall_tablet@female@base'
+local tabletAnimationName = 'base'
+local tabletPickupAnimation = 'amb@world_human_tourist_map@male@base'
+local tabletPickupAnimationName = 'base'
+local tabletOpening = false
+local tabletTargetPath = '/'
+
+local function loadAsset(asset, isModel)
+  if isModel then
+    RequestModel(asset)
+    while not HasModelLoaded(asset) do Wait(0) end
+  else
+    RequestAnimDict(asset)
+    while not HasAnimDictLoaded(asset) do Wait(0) end
+  end
+end
+
+local function stopTabletEmote()
+  local ped = PlayerPedId()
+  StopAnimTask(ped, tabletAnimation, tabletAnimationName, 1.0)
+  StopAnimTask(ped, tabletPickupAnimation, tabletPickupAnimationName, 1.0)
+  ClearPedSecondaryTask(ped)
+  tabletOpening = false
+
+  if tabletProp and DoesEntityExist(tabletProp) then
+    DeleteEntity(tabletProp)
+    tabletProp = nil
+  end
+end
+
+local function startTabletEmote(path)
+  tabletTargetPath = type(path) == 'string' and path ~= '' and path or '/'
+  local ped = PlayerPedId()
+  stopTabletEmote()
+
+  loadAsset(tabletPickupAnimation, false)
+  loadAsset(tabletAnimation, false)
+  loadAsset(`prop_cs_tablet`, true)
+
+  tabletProp = CreateObject(`prop_cs_tablet`, 1.0, 1.0, 1.0, true, true, false)
+  AttachEntityToEntity(tabletProp, ped, GetPedBoneIndex(ped, 28422), 0.0, -0.03, 0.0, 20.0, 0.0, 0.0, true, true, false, true, 1, true)
+  SetModelAsNoLongerNeeded(`prop_cs_tablet`)
+  tabletOpening = true
+  TaskPlayAnim(ped, tabletPickupAnimation, tabletPickupAnimationName, 8.0, -8.0, 5000, 49, 0.0, false, false, false)
+  SetNuiFocus(true, true)
+  SendNUIMessage({ action = 'open' })
+
+  CreateThread(function()
+    Wait(5000)
+    if not tabletOpening or not tabletProp or not DoesEntityExist(tabletProp) then return end
+    TaskPlayAnim(ped, tabletAnimation, tabletAnimationName, 8.0, -8.0, -1, 49, 0.0, false, false, false)
+  end)
+end
+
 local function closeNui()
+  stopTabletEmote()
   SetNuiFocus(false, false)
   SendNUIMessage({ action = 'close' })
 end
 
 CreateThread(function()
   closeNui()
+end)
+
+AddEventHandler('onResourceStop', function(resourceName)
+  if resourceName == GetCurrentResourceName() then
+    stopTabletEmote()
+  end
 end)
 
 CreateThread(function()
@@ -63,30 +125,47 @@ CreateThread(function()
     Wait(1000)
   end
 
-  local target = Config.orderTarget
-  if not target or not target.coords or #(target.coords) < 0.1 then
-    print('[order] Config.orderTarget.coords muss auf den Rex-Diner-Standort gesetzt werden')
+  local rawTargets = Config.orderTarget
+  if not rawTargets then
+    print('[order] Config.orderTarget muss gesetzt sein')
     return
   end
 
-  exports.ox_target:addBoxZone({
-    coords = target.coords,
-    size = target.size,
-    rotation = target.rotation,
-    debug = false,
-    options = {
-      {
-        name = 'rex_order_open',
-        icon = 'fa-solid fa-utensils',
-        label = 'Bestellkarte öffnen',
-        distance = target.distance,
-        onSelect = function()
-          SetNuiFocus(true, true)
-          SendNUIMessage({ action = 'open' })
+  local targets = {}
+  if rawTargets.coords then
+    targets = { rawTargets }
+  else
+    targets = rawTargets
+  end
+
+  if type(targets) ~= 'table' or #targets == 0 then
+    print('[order] Config.orderTarget muss entweder ein einzelner Punkt oder eine Liste von Punkten sein')
+    return
+  end
+
+  for _, target in ipairs(targets) do
+    if target and target.coords and #(target.coords) >= 0.1 then
+      exports.ox_target:addBoxZone({
+        coords = target.coords,
+        size = target.size or vec3(2.0, 2.0, 2.0),
+        rotation = target.rotation or 0.0,
+        debug = false,
+        options = {
+          {
+            name = 'rex_order_open',
+            icon = 'fa-solid fa-utensils',
+            label = 'Bestellkarte öffnen',
+            distance = target.distance or 2.5,
+            onSelect = function()
+          startTabletEmote(target.path)
         end,
-      },
-    },
-  })
+          },
+        },
+      })
+    else
+      print('[order] Ungültiger Eintrag in Config.orderTarget: ' .. tostring(target))
+    end
+  end
 end)
 
 RegisterNetEvent('rex_order:loginResult', function(result)
@@ -100,7 +179,7 @@ end)
 
 RegisterNUICallback('startAuth', function(_, callback)
   SendNUIMessage({ action = 'authenticating' })
-  TriggerServerEvent('rex_order:requestLogin')
+  TriggerServerEvent('rex_order:requestLogin', tabletTargetPath)
   callback({ ok = true })
 end)
 

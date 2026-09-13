@@ -24,14 +24,14 @@ client_script {
 
 shared_script {
 	'@ox_lib/init.lua',
-	--'@WaveShield/resource/include.lua'
+	'@WaveShield/resource/include.lua'
 }
 
 dependencies {
 	'ox_lib',
 	'ox_target',
 	'ox_inventory',
-	-- 'jobs_creator',
+	'jobs_creator',
 	'es_extended',
 	'oxmysql'
 }

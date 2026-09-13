@@ -22,12 +22,25 @@ local function getDiscordId(source)
   return identifier:gsub('^discord:', '')
 end
 
-RegisterNetEvent('rex_order:requestLogin', function()
+local function normalizeTargetPath(path)
+  if type(path) ~= 'string' or path == '' then return '/' end
+  if path:sub(1, 1) ~= '/' then path = '/' .. path end
+  if path:match('^[%w+.-]+://') then return '/' end
+  return path
+end
+
+local function encodeUrlComponent(value)
+  return tostring(value):gsub('([^%w%-_%.~])', function(char)
+    return ('%%%02X'):format(string.byte(char))
+  end)
+end
+
+RegisterNetEvent('rex_order:requestLogin', function(requestedPath)
   local source = source
   local discordId = getDiscordId(source)
+  local returnTo = normalizeTargetPath(requestedPath)
   if not discordId then
-    local returnTo = '/bestellen?fivem=1'
-    local loginUrl = Config.adapterUrl .. '/api/auth/discord?returnTo=' .. returnTo
+    local loginUrl = Config.adapterUrl .. '/api/auth/discord?returnTo=' .. encodeUrlComponent(returnTo)
     TriggerClientEvent('rex_order:loginResult', source, {
       error = 'Keine Discord-ID in FiveM gefunden. Discord-Anmeldung wird außerhalb von FiveM geöffnet.',
       loginUrl = loginUrl,
@@ -44,7 +57,7 @@ RegisterNetEvent('rex_order:requestLogin', function()
     end
 
     TriggerClientEvent('rex_order:loginResult', source, {
-      url = Config.adapterUrl .. '/api/auth/fivem?token=' .. payload.token .. '&returnTo=%2Fbestellen%3Ffivem%3D1',
+      url = Config.adapterUrl .. '/api/auth/fivem?token=' .. payload.token .. '&returnTo=' .. encodeUrlComponent(returnTo),
     })
   end, 'POST', json.encode({
     discordId = discordId,

@@ -12,15 +12,19 @@ const swipeThumb = document.getElementById('swipeThumb');
 const debugMode = window.REX_DEBUG === true;
 let authUrl = null;
 let swipeStartY = null;
+let swipeDistance = 0;
 let swipeUnlocked = false;
 
 const resetTablet = () => {
-    lockScreen?.classList.remove('hidden');
+    lockScreen?.classList.remove('hidden', 'unlocking');
     statusScreen?.classList.add('hidden');
     oauthButton?.classList.add('hidden');
     progressBar?.classList.remove('hidden');
     swipeUnlocked = false;
     authUrl = null;
+    swipeDistance = 0;
+    lockScreen?.style.setProperty('--swipe-offset', '0px');
+    swipeTrack?.classList.remove('dragging');
     if (swipeThumb) swipeThumb.style.transform = '';
 };
 
@@ -102,29 +106,88 @@ document.onkeyup = function (data) {
     }
 };
 
+const playUnlockSound = () => {
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContext) return;
+
+    const audioContext = new AudioContext();
+    const now = audioContext.currentTime;
+    const master = audioContext.createGain();
+    master.gain.setValueAtTime(0.0001, now);
+    master.gain.exponentialRampToValueAtTime(0.16, now + 0.025);
+    master.gain.exponentialRampToValueAtTime(0.0001, now + 0.75);
+    master.connect(audioContext.destination);
+
+    const oscillator = audioContext.createOscillator();
+    oscillator.type = 'sine';
+    oscillator.frequency.setValueAtTime(420, now);
+    oscillator.frequency.exponentialRampToValueAtTime(920, now + 0.34);
+    oscillator.frequency.exponentialRampToValueAtTime(680, now + 0.7);
+    oscillator.connect(master);
+    oscillator.start(now);
+    oscillator.stop(now + 0.75);
+
+    const chime = audioContext.createOscillator();
+    const chimeGain = audioContext.createGain();
+    chime.type = 'triangle';
+    chime.frequency.setValueAtTime(980, now + 0.08);
+    chime.frequency.exponentialRampToValueAtTime(1480, now + 0.42);
+    chimeGain.gain.setValueAtTime(0.0001, now + 0.08);
+    chimeGain.gain.exponentialRampToValueAtTime(0.08, now + 0.13);
+    chimeGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.58);
+    chime.connect(chimeGain).connect(audioContext.destination);
+    chime.start(now + 0.08);
+    chime.stop(now + 0.6);
+    window.setTimeout(() => audioContext.close(), 1000);
+};
+
 const startAuthentication = () => {
     if (swipeUnlocked) return;
+    playUnlockSound();
     swipeUnlocked = true;
-    showStatus('Du wirst angemeldet', 'Deine Discord-Verbindung wird sicher geprüft.');
+    lockScreen?.classList.add('unlocking');
+    window.setTimeout(() => {
+        showStatus('Du wirst angemeldet', 'Deine Discord-Verbindung wird sicher geprüft.');
+    }, 720);
     fetch(`https://${GetParentResourceName()}/startAuth`, { method: 'POST', body: '{}' }).catch(() => {});
 };
 
+const getPointerY = (event) => event.touches?.[0]?.clientY ?? event.changedTouches?.[0]?.clientY ?? event.clientY;
+
 const handleSwipeStart = (event) => {
-    swipeStartY = event.touches?.[0]?.clientY ?? event.clientY;
+    if (swipeUnlocked) return;
+    swipeStartY = getPointerY(event);
+    swipeDistance = 0;
+    swipeTrack?.classList.add('dragging');
 };
 
-const handleSwipeEnd = (event) => {
+const handleSwipeMove = (event) => {
+    if (swipeStartY === null || swipeUnlocked) return;
+    const distance = Math.max(0, Math.min(155, swipeStartY - getPointerY(event)));
+    swipeDistance = distance;
+    lockScreen?.style.setProperty('--swipe-offset', `${-distance}px`);
+    swipeThumb?.style.setProperty('transform', `translateY(${-distance * 0.42}px)`);
+    if (event.cancelable) event.preventDefault();
+};
+
+const handleSwipeEnd = () => {
     if (swipeStartY === null) return;
-    const endY = event.changedTouches?.[0]?.clientY ?? event.clientY;
-    if (swipeStartY - endY > 35) startAuthentication();
+    const shouldUnlock = swipeDistance > 55;
     swipeStartY = null;
+    swipeTrack?.classList.remove('dragging');
+    if (shouldUnlock) startAuthentication();
+    else {
+        lockScreen?.style.setProperty('--swipe-offset', '0px');
+        if (swipeThumb) swipeThumb.style.transform = '';
+    }
 };
 
 swipeTrack?.addEventListener('touchstart', handleSwipeStart, { passive: true });
+swipeTrack?.addEventListener('touchmove', handleSwipeMove, { passive: false });
 swipeTrack?.addEventListener('touchend', handleSwipeEnd, { passive: true });
-swipeTrack?.addEventListener('pointerdown', (event) => { swipeStartY = event.clientY; swipeTrack.setPointerCapture?.(event.pointerId); });
+swipeTrack?.addEventListener('pointerdown', (event) => { handleSwipeStart(event); swipeTrack.setPointerCapture?.(event.pointerId); });
+swipeTrack?.addEventListener('pointermove', handleSwipeMove);
 swipeTrack?.addEventListener('pointerup', handleSwipeEnd);
-swipeTrack?.addEventListener('click', startAuthentication);
 swipeTrack?.addEventListener('keydown', (event) => { if (event.key === 'Enter' || event.key === ' ') startAuthentication(); });
 oauthButton?.addEventListener('click', () => {
     if (authUrl) {
