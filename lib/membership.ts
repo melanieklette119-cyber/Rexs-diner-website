@@ -3,8 +3,15 @@ import { createClient } from "@supabase/supabase-js"
 
 const DISCORD_API = "https://discord.com/api/v10"
 
-export async function sendMembershipDM(discordId: string, content: string) {
-  if (!discordId || !content) return false
+export type MembershipDMEmbed = {
+  title: string
+  description: string
+  color?: number
+  fields?: Array<{ name: string; value: string; inline?: boolean }>
+}
+
+export async function sendMembershipDM(discordId: string, embed: MembershipDMEmbed) {
+  if (!discordId || !embed?.title || !embed?.description) return false
   try {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
     const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
@@ -24,7 +31,16 @@ export async function sendMembershipDM(discordId: string, content: string) {
     const messageResponse = await fetch(`${DISCORD_API}/channels/${channel.id}/messages`, {
       method: "POST",
       headers: { Authorization: `Bot ${token}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ content }),
+      body: JSON.stringify({
+        embeds: [{
+          title: embed.title,
+          description: embed.description,
+          color: embed.color ?? 0xD4673E,
+          fields: embed.fields,
+          footer: { text: "Rex's Diner • Mitgliederbereich" },
+          timestamp: new Date().toISOString(),
+        }],
+      }),
     })
     return messageResponse.ok
   } catch (error) {

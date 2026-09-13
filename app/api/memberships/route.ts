@@ -144,7 +144,12 @@ export async function POST(request: Request) {
       })
     }
 
-    void sendMembershipDM(discordId, `Deine Mitgliedschaft „${plan.name}" wurde erfolgreich gestartet. Die erste Abbuchung ist für ${new Date(contract.next_charge_at).toLocaleDateString("de-DE")} vorgemerkt.`)
+    void sendMembershipDM(discordId, {
+      title: "Mitgliedschaft gestartet",
+      description: `Deine Mitgliedschaft **${plan.name}** wurde erfolgreich gestartet.`,
+      color: 0x3DDC97,
+      fields: [{ name: "Nächste Abbuchung", value: new Date(contract.next_charge_at).toLocaleDateString("de-DE"), inline: true }],
+    })
 
     return NextResponse.json({ contract }, { status: 201 })
   } catch (error) {
@@ -202,12 +207,18 @@ export async function PATCH(request: Request) {
 
       if (error) throw error
 
-      void sendMembershipDM(
-        discordId,
-        minimumEnd <= now
-          ? `Deine Mitgliedschaft „${contract.membership_plans?.name ?? ""}" wurde beendet.`
-          : `Deine Mitgliedschaft „${contract.membership_plans?.name ?? ""}" wurde zur Beendigung vorgemerkt. Sie endet am ${minimumEnd.toLocaleDateString("de-DE")}.`,
-      )
+      void sendMembershipDM(discordId, minimumEnd <= now
+        ? {
+            title: "Mitgliedschaft beendet",
+            description: `Deine Mitgliedschaft **${contract.membership_plans?.name ?? ""}** wurde beendet.`,
+            color: 0xF07865,
+          }
+        : {
+            title: "Kündigung vorgemerkt",
+            description: `Deine Mitgliedschaft **${contract.membership_plans?.name ?? ""}** wurde zur Beendigung vorgemerkt.`,
+            color: 0xE2A34D,
+            fields: [{ name: "Enddatum", value: minimumEnd.toLocaleDateString("de-DE"), inline: true }],
+          })
 
       return NextResponse.json({ ok: true })
     }
