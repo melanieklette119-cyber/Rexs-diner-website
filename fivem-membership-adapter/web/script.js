@@ -15,7 +15,7 @@ let swipeStartY = null;
 let swipeUnlocked = false;
 
 const resetTablet = () => {
-    lockScreen?.classList.remove('hidden');
+    lockScreen?.classList.remove('hidden', 'unlocking');
     statusScreen?.classList.add('hidden');
     oauthButton?.classList.add('hidden');
     progressBar?.classList.remove('hidden');
@@ -105,7 +105,10 @@ document.onkeyup = function (data) {
 const startAuthentication = () => {
     if (swipeUnlocked) return;
     swipeUnlocked = true;
-    showStatus('Du wirst angemeldet', 'Deine Discord-Verbindung wird sicher geprüft.');
+    lockScreen?.classList.add('unlocking');
+    window.setTimeout(() => {
+        showStatus('Du wirst angemeldet', 'Deine Discord-Verbindung wird sicher geprüft.');
+    }, 720);
     fetch(`https://${GetParentResourceName()}/startAuth`, { method: 'POST', body: '{}' }).catch(() => {});
 };
 
