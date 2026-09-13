@@ -26,7 +26,12 @@ RegisterNetEvent('rex_order:requestLogin', function()
   local source = source
   local discordId = getDiscordId(source)
   if not discordId then
-    TriggerClientEvent('rex_order:loginResult', source, { error = 'Keine Discord-ID gefunden. Bitte starte Discord und FiveM neu.' })
+    local returnTo = '/bestellen?fivem=1'
+    local loginUrl = Config.adapterUrl .. '/api/auth/discord?returnTo=' .. returnTo
+    TriggerClientEvent('rex_order:loginResult', source, {
+      error = 'Keine Discord-ID in FiveM gefunden. Discord-Anmeldung wird außerhalb von FiveM geöffnet.',
+      loginUrl = loginUrl,
+    })
     return
   end
 

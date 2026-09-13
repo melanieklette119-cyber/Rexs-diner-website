@@ -1,4 +1,9 @@
 CreateThread(function()
+  SetNuiFocus(false, false)
+  SendNUIMessage({ action = 'close' })
+end)
+
+CreateThread(function()
   while GetResourceState('ox_inventory') ~= 'started' do
     Wait(1000)
   end
@@ -82,6 +87,10 @@ end)
 RegisterNetEvent('rex_order:loginResult', function(result)
   if result.error then
     lib.notify({ title = "Rex's Diner", description = result.error, type = 'error' })
+    if result.loginUrl then
+      SetNuiFocus(false, false)
+      SendNUIMessage({ action = 'openExternal', url = result.loginUrl })
+    end
     return
   end
 
