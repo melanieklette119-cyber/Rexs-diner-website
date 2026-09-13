@@ -46,7 +46,11 @@ export async function GET(request: Request) {
   const expired = (data ?? []).filter((charge) => charge.status === "pending_cancellation" && new Date(charge.minimum_end_at) <= now).map((charge) => charge.id)
   if (expired.length > 0) {
     await supabase.from("membership_contracts").update({ status: "cancelled", updated_at: now.toISOString() }).in("id", expired)
-    await Promise.all((data ?? []).filter((charge) => expired.includes(charge.id)).map((charge) => sendMembershipDM(charge.discord_id, "Deine Mitgliedschaft wurde nach Ablauf der Mindestlaufzeit beendet.")))
+    await Promise.all((data ?? []).filter((charge) => expired.includes(charge.id)).map((charge) => sendMembershipDM(charge.discord_id, {
+      title: "Mitgliedschaft beendet",
+      description: "Deine Mitgliedschaft wurde nach Ablauf der Mindestlaufzeit beendet.",
+      color: 0xF07865,
+    })))
   }
   return NextResponse.json({
     charges: due.filter((charge) => !expired.includes(charge.id)).map((charge) => {
@@ -75,12 +79,18 @@ export async function POST(request: Request) {
   const chargeAmount = Number(body.chargeAmount ?? plan?.price ?? 0)
   const { error } = await supabase.from("membership_charge_attempts").upsert({ contract_id: contract.id, idempotency_key: body.idempotencyKey, scheduled_for: contract.next_charge_at, status: body.status, amount: chargeAmount, fivem_bank_account_id: contract.fivem_bank_account_id, processed_at: new Date().toISOString(), error_message: body.errorMessage ?? null }, { onConflict: "idempotency_key" })
   if (error) return NextResponse.json({ error: "Abbuchungsergebnis konnte nicht gespeichert werden." }, { status: 500 })
-  void sendMembershipDM(
-    contract.discord_id ?? contract.user_id,
-    body.status === "succeeded"
-      ? `Die Abbuchung über ${chargeAmount.toFixed(2)} € für deine Mitgliedschaft war erfolgreich.`
-      : `Die Abbuchung über ${chargeAmount.toFixed(2)} € für deine Mitgliedschaft ist fehlgeschlagen. ${body.errorMessage ? `Grund: ${body.errorMessage}` : "Bitte prüfe dein FiveM-Bankkonto."}`,
-  )
+  void sendMembershipDM(contract.discord_id ?? contract.user_id, body.status === "succeeded"
+    ? {
+        title: "Abbuchung erfolgreich",
+        description: `Die Abbuchung über **${chargeAmount.toFixed(2)} €** für deine Mitgliedschaft war erfolgreich.`,
+        color: 0x3DDC97,
+      }
+    : {
+        title: "Abbuchung fehlgeschlagen",
+        description: `Die Abbuchung über **${chargeAmount.toFixed(2)} €** für deine Mitgliedschaft ist fehlgeschlagen.`,
+        color: 0xF07865,
+        fields: [{ name: "Nächster Schritt", value: body.errorMessage || "Bitte prüfe dein FiveM-Bankkonto." }],
+      })
 
   if (body.status === "succeeded") {
     let next = new Date(contract.next_charge_at)
