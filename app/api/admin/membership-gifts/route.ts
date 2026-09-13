@@ -23,8 +23,16 @@ export async function GET(request: Request) {
     const supabase = await getAdminClient(request)
     if (!supabase) return NextResponse.json({ error: "Nicht autorisiert." }, { status: 403 })
     const query = new URL(request.url).searchParams.get("q")?.trim() ?? ""
-    let builder = supabase.from("users").select("id, username, discord_user_id, full_name").limit(20)
-    if (query) builder = builder.or(`username.ilike.%${query}%,discord_user_id.ilike.%${query}%,full_name.ilike.%${query}%`)
+    let builder = supabase
+      .from("users")
+      .select("id, username, discord_user_id, full_name")
+      .not("discord_user_id", "is", null)
+      .neq("discord_user_id", "")
+      .limit(20)
+    if (query) {
+      const safeQuery = query.replace(/[(),]/g, " ")
+      builder = builder.or(`username.ilike.%${safeQuery}%,discord_user_id.ilike.%${safeQuery}%,full_name.ilike.%${safeQuery}%`)
+    }
     const { data, error } = await builder.order("username")
     if (error) throw error
     return NextResponse.json({ users: data ?? [], plans: await getMembershipPlans() })
