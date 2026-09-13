@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -26,7 +27,14 @@ type Address = {
 }
 
 export default function BestellenPage() {
+  const searchParams = useSearchParams()
+  const isFiveM = searchParams.get("fivem") === "1"
   const [menuItems, setMenuItems] = useState<MenuItem[]>([])
+
+  useEffect(() => {
+    document.documentElement.classList.toggle("fivem-compat", isFiveM)
+    return () => document.documentElement.classList.remove("fivem-compat")
+  }, [isFiveM])
   const [cart, setCart] = useState<CartItem[]>([])
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
   const [discordUser, setDiscordUser] = useState<{ id: string; username: string; avatar: string } | null>(null)
