@@ -53,9 +53,15 @@ export async function POST(request: Request, { params }: { params: Promise<{ tok
       next_charge_at: gift.ends_at,
       billing_interval: plan.billing_interval,
     })
-    if (contractError) throw contractError
+    if (contractError) {
+      console.error("[membership-gifts] contract insert failed", JSON.stringify(contractError))
+      return NextResponse.json({ error: `Geschenk konnte nicht verarbeitet werden: ${contractError.message || contractError.code || "Datenbankfehler"}` }, { status: 500 })
+    }
     const { error: updateError } = await supabase.from("membership_gifts").update({ status: "accepted", accepted_at: now, updated_at: now }).eq("id", gift.id).eq("status", "pending")
-    if (updateError) throw updateError
+    if (updateError) {
+      console.error("[membership-gifts] gift update failed", JSON.stringify(updateError))
+      return NextResponse.json({ error: `Geschenk konnte nicht verarbeitet werden: ${updateError.message || updateError.code || "Datenbankfehler"}` }, { status: 500 })
+    }
     void sendMembershipDM(discordId, { title: "Geschenk angenommen", description: `Deine **${plan.name}** wurde aktiviert. Viel Spaß bei Rex’s Diner!`, color: 0x3DDC97 })
     return NextResponse.json({ message: "Dein Geschenk wurde angenommen und aktiviert." })
   } catch (error) {
