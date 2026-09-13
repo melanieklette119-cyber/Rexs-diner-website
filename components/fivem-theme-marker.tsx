@@ -8,9 +8,16 @@ export function FiveMThemeMarker() {
   const isFiveM = searchParams.get("fivem") === "1"
 
   useEffect(() => {
-    document.documentElement.classList.toggle("fivem-compat", isFiveM)
-    return () => document.documentElement.classList.remove("fivem-compat")
-  }, [isFiveM])
+    const root = document.documentElement
+    const hasFiveMParam = searchParams.get("fivem") === "1"
+    const isFiveMContext = hasFiveMParam || sessionStorage.getItem("rex-fivem-context") === "1"
+
+    if (isFiveMContext) {
+      sessionStorage.setItem("rex-fivem-context", "1")
+    }
+
+    root.classList.toggle("fivem-compat", isFiveMContext)
+  }, [isFiveM, searchParams])
 
   return null
 }

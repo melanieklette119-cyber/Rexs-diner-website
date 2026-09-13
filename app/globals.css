@@ -137,9 +137,37 @@
   --input: #30221c;
 }
 
+.fivem-compat,
 .fivem-compat body {
-  background-color: #17120f;
-  color: #f7e6c4;
+  background-color: #17120f !important;
+  color: #f7e6c4 !important;
+  color-scheme: dark;
+}
+
+.fivem-compat body * {
+  border-color: #604436;
+}
+
+.fivem-compat main,
+.fivem-compat header,
+.fivem-compat section,
+.fivem-compat article,
+.fivem-compat aside,
+.fivem-compat nav,
+.fivem-compat footer {
+  background-color: #211815 !important;
+  color: #f7e6c4 !important;
+}
+
+.fivem-compat input,
+.fivem-compat textarea,
+.fivem-compat select {
+  background-color: #30221c !important;
+  color: #f7e6c4 !important;
+}
+
+.fivem-compat button {
+  color: #fff8ea !important;
 }
 
 @layer base {
