@@ -8,18 +8,49 @@
         <div id="googledocs" name="googledocs" class="googledocs">
             <div class="tablet-shell">
                 <div class="tablet-header">
-                    <div class="title-wrap">
-                        <span class="status-dot"></span>
-                        <span>Rex's Diner</span>
+                    <div class="brand-lockup">
+                        <div class="brand-mark"><img src="https://rexs-diner-srp.vercel.app/images/rex-dinner-logo.png" alt="Rex&apos;s Diner Logo"></div>
+                        <div class="title-wrap">
+                            <span class="title">Rex&apos;s Diner</span>
+                            <span class="subtitle"><span class="status-dot"></span>Online-Bestellung</span>
+                        </div>
                     </div>
-                    <button id="closeTablet" type="button" aria-label="Schließen">✕</button>
+                    <div class="window-actions">
+                        <span class="secure-label">DINER TABLET • SECURE ACCESS</span>
+                        <button id="closeTablet" type="button" aria-label="Schließen">&times;</button>
+                    </div>
                 </div>
                 <div class="frame-wrap">
+                    <div id="lockScreen" class="tablet-screen lock-screen">
+                        <div class="screen-glow"></div>
+                        <div class="lock-content">
+                            <div class="lock-logo">
+                                <img src="https://rexs-diner-srp.vercel.app/images/rex-dinner-logo.png" alt="Rex&apos;s Diner Logo">
+                            </div>
+                            <p class="eyebrow">REX&apos;S DINER • SECURE TABLET</p>
+                            <h1>Willkommen zurück</h1>
+                            <p class="screen-copy">Streiche nach oben, um das Rex&apos;s Diner Tablet zu entsperren.</p>
+                            <div id="swipeTrack" class="swipe-track" role="button" tabindex="0" aria-label="Nach oben streichen zum Entsperren">
+                                <div id="swipeThumb" class="swipe-thumb">↑</div>
+                                <span>Zum Entsperren streichen</span>
+                            </div>
+                            <p class="security-note">Deine Verbindung ist verschlüsselt.</p>
+                        </div>
+                    </div>
+                    <div id="statusScreen" class="tablet-screen status-screen hidden">
+                        <div class="status-icon" id="statusIcon">◌</div>
+                        <p class="eyebrow" id="statusEyebrow">REX CONNECT</p>
+                        <h1 id="statusTitle">Du wirst angemeldet</h1>
+                        <p class="screen-copy" id="statusCopy">Deine Discord-Verbindung wird sicher geprüft.</p>
+                        <div id="progressBar" class="progress-bar"><span></span></div>
+                        <button id="oauthButton" class="oauth-button hidden" type="button">Im Browser mit Discord autorisieren</button>
+                    </div>
                     <iframe src="about:blank" title="Rex's Diner Bestellung"></iframe>
                 </div>
             </div>
         </div>
     </body>
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.4/jquery.min.js"></script>
+    <script>window.REX_DEBUG = false;</script>
     <script src="script.js"></script>
 </html>

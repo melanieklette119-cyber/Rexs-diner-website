@@ -460,10 +460,6 @@ export default function BestellenPage() {
       customer_email: customerInfo.discordId,
       customer_phone: customerInfo.phone,
       total: Number.parseFloat(getTotalPrice()),
-      subtotal: Number.parseFloat(getSubtotalPrice()),
-      discount_code: appliedDiscount?.code || null,
-      discount_percent: appliedDiscount?.percent || 0,
-      delivery_cost: getDeliveryCost(),
       status: "Neu",
       notes: `Adresse: ${getSelectedAddressName()}`,
     }
