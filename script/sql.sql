@@ -185,7 +185,7 @@ CREATE TABLE IF NOT EXISTS public.calendar_events (
 CREATE TABLE IF NOT EXISTS public.membership_gifts (
   id BIGSERIAL PRIMARY KEY,
   token TEXT UNIQUE NOT NULL,
-  recipient_user_id INTEGER REFERENCES public.users(id) ON DELETE CASCADE,
+  recipient_user_id INTEGER,
   recipient_discord_id TEXT NOT NULL,
   plan_id TEXT NOT NULL,
   duration_months INTEGER NOT NULL CHECK (duration_months BETWEEN 1 AND 36),

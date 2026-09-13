@@ -84,6 +84,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ gift }, { status: 201 })
   } catch (error) {
     console.error("[membership-gifts] POST failed", error)
-    return NextResponse.json({ error: "Geschenkmitgliedschaft konnte nicht erstellt werden." }, { status: 500 })
+    const details = error && typeof error === "object" && "message" in error ? String(error.message) : "Unbekannter Datenbankfehler."
+    return NextResponse.json({ error: `Geschenkmitgliedschaft konnte nicht erstellt werden: ${details}` }, { status: 500 })
   }
 }
