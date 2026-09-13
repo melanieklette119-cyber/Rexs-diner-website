@@ -48,6 +48,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ tok
       plan_id: plan.id,
       full_name: profile?.full_name || profile?.discord_username || "Geschenkmitgliedschaft",
       discord_id: discordId,
+      fivem_bank_account_id: `gift-${discordId}`,
       status: "active",
       minimum_end_at: gift.ends_at,
       next_charge_at: gift.ends_at,
@@ -64,9 +65,9 @@ export async function POST(request: Request, { params }: { params: Promise<{ tok
     }
     void sendMembershipDM(discordId, { title: "Geschenk angenommen", description: `Deine **${plan.name}** wurde aktiviert. Viel Spaß bei Rex’s Diner!`, color: 0x3DDC97 })
     return NextResponse.json({ message: "Dein Geschenk wurde angenommen und aktiviert." })
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("[membership-gifts] POST failed", error)
-    const details = error instanceof Error ? error.message : "Unbekannter Datenbankfehler."
-    return NextResponse.json({ error: `Geschenk konnte nicht verarbeitet werden: ${details}` }, { status: 500 })
+    const details = error && typeof error === "object" && "message" in error ? String(error.message) : JSON.stringify(error)
+    return NextResponse.json({ error: `Geschenk konnte nicht verarbeitet werden: ${details || "Unbekannter Datenbankfehler."}` }, { status: 500 })
   }
 }
