@@ -34,6 +34,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ tok
     if (giftError || !gift || gift.recipient_discord_id !== discordId || new Date(gift.ends_at) <= new Date()) return NextResponse.json({ error: "Dieses Geschenk ist nicht verfügbar." }, { status: 404 })
     const { data: plan, error: planError } = await supabase.from("membership_plans").select("id, name, billing_interval").eq("id", gift.plan_id).maybeSingle()
     if (planError || !plan) return NextResponse.json({ error: "Die geschenkte Mitgliedschaft ist nicht mehr verfügbar." }, { status: 404 })
+    const { data: profile } = await supabase.from("user_profiles").select("full_name, discord_username").eq("discord_id", discordId).maybeSingle()
     const now = new Date().toISOString()
     if (action === "reject") {
       await supabase.from("membership_gifts").update({ status: "rejected", updated_at: now }).eq("id", gift.id).eq("status", "pending")
@@ -42,7 +43,16 @@ export async function POST(request: Request, { params }: { params: Promise<{ tok
     }
     const { count } = await supabase.from("membership_contracts").select("id", { count: "exact", head: true }).eq("user_id", discordId).in("status", ["active", "pending_cancellation"])
     if ((count ?? 0) > 0) return NextResponse.json({ error: "Du hast bereits eine aktive Mitgliedschaft." }, { status: 409 })
-    const { error: contractError } = await supabase.from("membership_contracts").insert({ user_id: discordId, plan_id: plan.id, discord_id: discordId, status: "active", minimum_end_at: gift.ends_at, next_charge_at: gift.ends_at, billing_interval: plan.billing_interval })
+    const { error: contractError } = await supabase.from("membership_contracts").insert({
+      user_id: discordId,
+      plan_id: plan.id,
+      full_name: profile?.full_name || profile?.discord_username || "Geschenkmitgliedschaft",
+      discord_id: discordId,
+      status: "active",
+      minimum_end_at: gift.ends_at,
+      next_charge_at: gift.ends_at,
+      billing_interval: plan.billing_interval,
+    })
     if (contractError) throw contractError
     const { error: updateError } = await supabase.from("membership_gifts").update({ status: "accepted", accepted_at: now, updated_at: now }).eq("id", gift.id).eq("status", "pending")
     if (updateError) throw updateError
@@ -50,6 +60,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ tok
     return NextResponse.json({ message: "Dein Geschenk wurde angenommen und aktiviert." })
   } catch (error) {
     console.error("[membership-gifts] POST failed", error)
-    return NextResponse.json({ error: "Geschenk konnte nicht verarbeitet werden." }, { status: 500 })
+    const details = error instanceof Error ? error.message : "Unbekannter Datenbankfehler."
+    return NextResponse.json({ error: `Geschenk konnte nicht verarbeitet werden: ${details}` }, { status: 500 })
   }
 }
