@@ -758,60 +758,40 @@ export default function BestellenPage() {
                   </div>
                 )}
 
-                <div className="border-t border-border pt-4 mt-4">
-                  <div className="space-y-2 mb-4">
-                    {appliedDiscount && (
-                      <div className="bg-green-50 border border-green-200 rounded p-3">
-                        <div className="flex justify-between items-center mb-2">
-                          <span className="text-sm font-medium text-green-800">
-                            Code: <span className="font-mono">{appliedDiscount.code}</span>
-                          </span>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={removeDiscount}
-                            className="h-6 w-6 p-0"
-                          >
-                            ×
-                          </Button>
-                        </div>
-                        <div className="text-xs text-green-700">
-                          -{appliedDiscount.percent}% Rabatt = -€{getDiscountAmount()}
-                        </div>
-                        <div className="text-xs text-green-600 mt-2 font-medium">
-                          Noch {appliedDiscount.remainingUsages}x verwendbar
-                        </div>
-                      </div>
-                    )}
-                    {!appliedDiscount && (
-                      <div className="space-y-2">
-                        <Label htmlFor="discount-code" className="text-sm">
-                          Rabattcode (optional)
-                        </Label>
-                        <div className="flex gap-2">
-                          <Input
-                            id="discount-code"
-                            placeholder="Rabattcode eingeben..."
-                            value={discountCode}
-                            onChange={(e) => setDiscountCode(e.target.value.toUpperCase())}
-                            onKeyPress={(e) =>
-                              e.key === "Enter" && validateAndApplyDiscount()
+                  <div className="border-t border-border pt-4 mt-4">
+                  <div className="rounded-lg border border-border bg-muted/30 p-3 space-y-2 mb-4">
+                    <Label htmlFor="discount-code" className="text-sm font-medium">
+                      Rabattcode (optional)
+                    </Label>
+                    {!appliedDiscount ? (
+                      <div className="flex gap-2">
+                        <Input
+                          id="discount-code"
+                          placeholder="Rabattcode eingeben..."
+                          value={discountCode}
+                          onChange={(e) => setDiscountCode(e.target.value.toUpperCase())}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter" && !e.nativeEvent.isComposing && e.keyCode !== 229) {
+                              e.preventDefault()
+                              validateAndApplyDiscount()
                             }
-                            className="text-sm"
-                          />
-                          <Button
-                            size="sm"
-                            onClick={validateAndApplyDiscount}
-                            className="bg-green-600 hover:bg-green-700"
-                          >
-                            Anwenden
-                          </Button>
-                        </div>
-                        {discountError && (
-                          <p className="text-xs text-destructive">{discountError}</p>
-                        )}
+                          }}
+                          className="text-sm"
+                        />
+                        <Button type="button" size="sm" onClick={validateAndApplyDiscount}>
+                          Anwenden
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-between gap-2 text-sm text-green-700">
+                        <span><span className="font-mono font-semibold">{appliedDiscount.code}</span> · {appliedDiscount.percent}% Rabatt</span>
+                        <Button type="button" size="sm" variant="outline" onClick={removeDiscount}>Entfernen</Button>
                       </div>
                     )}
+                    {discountError && <p className="text-xs text-destructive">{discountError}</p>}
+                  </div>
+                  <div className="space-y-2 mb-4">
+
                   </div>
 
                   {(appliedDiscount || getDeliveryCost() > 0) && (
