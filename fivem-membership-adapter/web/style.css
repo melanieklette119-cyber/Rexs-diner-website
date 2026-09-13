@@ -1,4 +1,5 @@
-html, body {
+html,
+body {
     margin: 0;
     width: 100%;
     height: 100%;
@@ -13,8 +14,8 @@ html, body {
     display: flex;
     align-items: center;
     justify-content: center;
-    background: rgba(7, 10, 14, 0.72);
-    backdrop-filter: blur(3px);
+    background: rgba(9, 13, 20, 0.96);
+    backdrop-filter: none;
     visibility: hidden;
     opacity: 0;
     transition: opacity 0.15s ease, visibility 0.15s ease;
@@ -29,7 +30,7 @@ html, body {
 .tablet-shell {
     width: min(1180px, 92vw);
     height: min(86vh, 860px);
-    background: linear-gradient(180deg, #171d27 0%, #0c1117 100%);
+    background: #151b24;
     border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 28px;
     box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6);
@@ -44,7 +45,7 @@ html, body {
     justify-content: space-between;
     height: 58px;
     padding: 0 18px 0 16px;
-    background: rgba(255, 255, 255, 0.04);
+    background: #1b2430;
     border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
@@ -84,7 +85,8 @@ html, body {
 
 .frame-wrap {
     flex: 1;
-    background: #ffffff;
+    position: relative;
+    background: #151b24;
     overflow: hidden;
 }
 
@@ -92,6 +94,6 @@ html, body {
     width: 100%;
     height: 100%;
     border: 0;
-    background: #ffffff;
+    background: #0b0f14;
     display: block;
 }

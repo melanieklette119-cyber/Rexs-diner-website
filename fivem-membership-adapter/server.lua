@@ -44,7 +44,7 @@ RegisterNetEvent('rex_order:requestLogin', function()
     end
 
     TriggerClientEvent('rex_order:loginResult', source, {
-      url = Config.adapterUrl .. '/api/auth/fivem?token=' .. payload.token .. '&returnTo=%2Fbestellen',
+      url = Config.adapterUrl .. '/api/auth/fivem?token=' .. payload.token .. '&returnTo=%2Fbestellen%3Ffivem%3D1',
     })
   end, 'POST', json.encode({
     discordId = discordId,
