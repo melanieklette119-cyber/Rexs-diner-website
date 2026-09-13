@@ -20,22 +20,23 @@
 
     body {
       position: relative;
-      display: none;
-      /* Standardmäßig komplett ausblenden */
+      visibility: hidden;
+      opacity: 0;
+      pointer-events: none;
+      /* Standardmäßig unsichtbar, damit FiveM nicht dauerhaft die NUI-Fläche zeigt. */
     }
 
     body.ui-open {
-      display: block;
       visibility: visible;
       opacity: 1;
-      /* Nur anzeigen, wenn die Klasse ui-open aktiv ist */
+      pointer-events: auto;
     }
 
     iframe {
       width: 100%;
       height: 100%;
       border: 0;
-      background: #111;
+      background: transparent;
     }
 
     #close {
@@ -84,11 +85,11 @@
     const closeButton = document.getElementById("close");
 
     function openUI(url) {
-      if (url) page.src = url;
-      document.body.classList.remove("ui-hidden");
       document.body.classList.add("ui-open");
       fallback.classList.remove("hidden");
-      setTimeout(() => fallback.classList.add("hidden"), 700);
+      if (url) {
+        page.src = url;
+      }
     }
 
     function closeUI() {
@@ -106,6 +107,10 @@
         window.open(url, "_blank", "noopener,noreferrer");
       }
     }
+
+    page.addEventListener("load", () => {
+      fallback.classList.add("hidden");
+    });
 
     closeButton.addEventListener("click", () => {
       closeUI();
@@ -139,9 +144,7 @@
     });
 
     // Beim Starten sofort schließen
-    window.addEventListener("load", () => {
-      closeUI();
-    });
+    closeUI();
   </script>
 
 </body>
