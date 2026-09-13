@@ -1,6 +1,10 @@
-CreateThread(function()
+local function closeNui()
   SetNuiFocus(false, false)
   SendNUIMessage({ action = 'close' })
+end
+
+CreateThread(function()
+  closeNui()
 end)
 
 CreateThread(function()
@@ -98,8 +102,12 @@ RegisterNetEvent('rex_order:loginResult', function(result)
   SendNUIMessage({ action = 'open', url = result.url })
 end)
 
+RegisterNUICallback('NUIFocusOff', function(_, callback)
+  closeNui()
+  callback({ ok = true })
+end)
+
 RegisterNUICallback('close', function(_, callback)
-  SetNuiFocus(false, false)
-  SendNUIMessage({ action = 'close' })
+  closeNui()
   callback({ ok = true })
 end)
