@@ -4,6 +4,7 @@ local tabletAnimationName = 'base'
 local tabletPickupAnimation = 'amb@world_human_tourist_map@male@base'
 local tabletPickupAnimationName = 'base'
 local tabletOpening = false
+local tabletTargetPath = '/'
 
 local function loadAsset(asset, isModel)
   if isModel then
@@ -28,7 +29,8 @@ local function stopTabletEmote()
   end
 end
 
-local function startTabletEmote()
+local function startTabletEmote(path)
+  tabletTargetPath = type(path) == 'string' and path ~= '' and path or '/'
   local ped = PlayerPedId()
   stopTabletEmote()
 
@@ -155,8 +157,8 @@ CreateThread(function()
             label = 'Bestellkarte öffnen',
             distance = target.distance or 2.5,
             onSelect = function()
-              startTabletEmote()
-            end,
+          startTabletEmote(target.path)
+        end,
           },
         },
       })
@@ -177,7 +179,7 @@ end)
 
 RegisterNUICallback('startAuth', function(_, callback)
   SendNUIMessage({ action = 'authenticating' })
-  TriggerServerEvent('rex_order:requestLogin')
+  TriggerServerEvent('rex_order:requestLogin', tabletTargetPath)
   callback({ ok = true })
 end)
 
