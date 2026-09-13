@@ -1,0 +1,97 @@
+html, body {
+    margin: 0;
+    width: 100%;
+    height: 100%;
+    background: transparent;
+    overflow: hidden;
+    font-family: Arial, sans-serif;
+}
+
+#googledocs {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(7, 10, 14, 0.72);
+    backdrop-filter: blur(3px);
+    visibility: hidden;
+    opacity: 0;
+    transition: opacity 0.15s ease, visibility 0.15s ease;
+    z-index: 9999;
+}
+
+#googledocs.visible {
+    visibility: visible;
+    opacity: 1;
+}
+
+.tablet-shell {
+    width: min(1180px, 92vw);
+    height: min(86vh, 860px);
+    background: linear-gradient(180deg, #171d27 0%, #0c1117 100%);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 28px;
+    box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.tablet-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 58px;
+    padding: 0 18px 0 16px;
+    background: rgba(255, 255, 255, 0.04);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.title-wrap {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: #f2f5f8;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+}
+
+.status-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #3ddc97;
+    box-shadow: 0 0 12px rgba(61, 220, 151, 0.8);
+}
+
+#closeTablet {
+    border: none;
+    background: rgba(255, 255, 255, 0.08);
+    color: #ffffff;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 18px;
+    transition: background 0.15s ease, transform 0.15s ease;
+}
+
+#closeTablet:hover {
+    background: rgba(255, 255, 255, 0.16);
+    transform: scale(1.04);
+}
+
+.frame-wrap {
+    flex: 1;
+    background: #ffffff;
+    overflow: hidden;
+}
+
+#googledocs iframe {
+    width: 100%;
+    height: 100%;
+    border: 0;
+    background: #ffffff;
+    display: block;
+}
