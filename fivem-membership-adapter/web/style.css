@@ -205,7 +205,11 @@ body {
 @keyframes unlock-content-away { 0% { opacity: 1; transform: translateY(-100px); } 100% { opacity: 0; transform: translateY(-165px) scale(.97); } }
 @keyframes unlock-thumb-away { 0% { transform: translateY(0); } 100% { transform: translateY(-62px) scale(1.08); box-shadow: 0 0 0 14px rgba(226,163,77,.08), 0 0 45px rgba(226,163,77,.7); } }
 .lock-content, .status-screen > * { position: relative; z-index: 1; }
-.lock-content { width: min(430px, 80%); display: grid; justify-items: center; gap: 12px; transform: translateY(-100px); }
+.lock-content { width: min(430px, 80%); display: grid; justify-items: center; gap: 12px; transform: translateY(calc(-100px + var(--swipe-offset, 0px))); transition: transform .42s cubic-bezier(.2,.8,.2,1); }
+.swipe-track.dragging { cursor: grabbing; border-color: rgba(226,163,77,.75); box-shadow: 0 0 24px rgba(226,163,77,.12); }
+.swipe-track.dragging ~ .security-note { opacity: .65; }
+.swipe-thumb { transition: transform .08s linear, box-shadow .2s ease; }
+
 .lock-logo { display: grid; place-items: center; width: 112px; height: 112px; padding: 8px; border: 2px solid #e2a34d; border-radius: 30px; background: linear-gradient(145deg, #d25c3c, #7e2929); box-shadow: 0 16px 42px rgba(0,0,0,.35), 0 0 28px rgba(226,163,77,.18); }
 .lock-logo img { width: 100%; height: 100%; object-fit: contain; border-radius: 22px; display: block; transform: translateY(-25px); }
 .eyebrow { margin: 0; color: #e2a34d; font-size: 10px; font-weight: 800; letter-spacing: .18em; }
