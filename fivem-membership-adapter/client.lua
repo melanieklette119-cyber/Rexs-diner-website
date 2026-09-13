@@ -1,10 +1,55 @@
+local tabletProp = nil
+local tabletAnimation = 'amb@world_human_seat_wall_tablet@female@base'
+local tabletAnimationName = 'base'
+
+local function loadAsset(asset, isModel)
+  if isModel then
+    RequestModel(asset)
+    while not HasModelLoaded(asset) do Wait(0) end
+  else
+    RequestAnimDict(asset)
+    while not HasAnimDictLoaded(asset) do Wait(0) end
+  end
+end
+
+local function stopTabletEmote()
+  local ped = PlayerPedId()
+  StopAnimTask(ped, tabletAnimation, tabletAnimationName, 1.0)
+  ClearPedSecondaryTask(ped)
+
+  if tabletProp and DoesEntityExist(tabletProp) then
+    DeleteEntity(tabletProp)
+    tabletProp = nil
+  end
+end
+
+local function startTabletEmote()
+  local ped = PlayerPedId()
+  stopTabletEmote()
+
+  loadAsset(tabletAnimation, false)
+  loadAsset(`prop_cs_tablet`, true)
+
+  tabletProp = CreateObject(`prop_cs_tablet`, 1.0, 1.0, 1.0, true, true, false)
+  AttachEntityToEntity(tabletProp, ped, GetPedBoneIndex(ped, 28422), 0.0, -0.03, 0.0, 20.0, 0.0, 0.0, true, true, false, true, 1, true)
+  SetModelAsNoLongerNeeded(`prop_cs_tablet`)
+  TaskPlayAnim(ped, tabletAnimation, tabletAnimationName, 8.0, -8.0, -1, 49, 0.0, false, false, false)
+end
+
 local function closeNui()
+  stopTabletEmote()
   SetNuiFocus(false, false)
   SendNUIMessage({ action = 'close' })
 end
 
 CreateThread(function()
   closeNui()
+end)
+
+AddEventHandler('onResourceStop', function(resourceName)
+  if resourceName == GetCurrentResourceName() then
+    stopTabletEmote()
+  end
 end)
 
 CreateThread(function()
@@ -81,6 +126,7 @@ CreateThread(function()
         label = 'Bestellkarte öffnen',
         distance = target.distance,
         onSelect = function()
+          startTabletEmote()
           SetNuiFocus(true, true)
           SendNUIMessage({ action = 'open' })
         end,
