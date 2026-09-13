@@ -178,6 +178,21 @@ CREATE TABLE IF NOT EXISTS public.calendar_events (
   location text
 );
 
+CREATE TABLE IF NOT EXISTS public.membership_gifts (
+  id BIGSERIAL PRIMARY KEY,
+  token TEXT UNIQUE NOT NULL,
+  recipient_user_id INTEGER REFERENCES public.users(id) ON DELETE CASCADE,
+  recipient_discord_id TEXT NOT NULL,
+  plan_id TEXT NOT NULL,
+  duration_months INTEGER NOT NULL CHECK (duration_months BETWEEN 1 AND 36),
+  ends_at TIMESTAMP WITH TIME ZONE NOT NULL,
+  status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'accepted', 'rejected', 'expired')),
+  created_by TEXT NOT NULL,
+  accepted_at TIMESTAMP WITH TIME ZONE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
 -- ============================================
 -- Indexes
 -- ============================================
