@@ -4,6 +4,7 @@ import { Inter } from "next/font/google"
 import { Analytics } from "@vercel/analytics/next"
 import { Suspense } from "react"
 import { Navigation } from "@/components/navigation"
+import { FiveMThemeMarker } from "@/components/fivem-theme-marker"
 // Einkommentieren = Cookies werden beim Tab-Schliessen geloescht (Session-Modus)
 // Auskommentiert  = Cookies laufen nur nach 12h ab (Standard)
 // import { DiscordSessionGuard } from "@/components/discord-session-guard"
@@ -24,6 +25,7 @@ export const metadata: Metadata = {
   },
 }
 
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -32,6 +34,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`font-sans antialiased ${inter.variable}`}>
+        <FiveMThemeMarker />
         <Navigation />
         {/* <DiscordSessionGuard /> */}
         <Suspense fallback={null}>{children}</Suspense>
