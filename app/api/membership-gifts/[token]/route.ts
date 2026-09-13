@@ -48,19 +48,26 @@ export async function POST(request: Request, { params }: { params: Promise<{ tok
       plan_id: plan.id,
       full_name: profile?.full_name || profile?.discord_username || "Geschenkmitgliedschaft",
       discord_id: discordId,
+      fivem_bank_account_id: `gift-${discordId}`,
       status: "active",
       minimum_end_at: gift.ends_at,
       next_charge_at: gift.ends_at,
       billing_interval: plan.billing_interval,
     })
-    if (contractError) throw contractError
+    if (contractError) {
+      console.error("[membership-gifts] contract insert failed", JSON.stringify(contractError))
+      return NextResponse.json({ error: `Geschenk konnte nicht verarbeitet werden: ${contractError.message || contractError.code || "Datenbankfehler"}` }, { status: 500 })
+    }
     const { error: updateError } = await supabase.from("membership_gifts").update({ status: "accepted", accepted_at: now, updated_at: now }).eq("id", gift.id).eq("status", "pending")
-    if (updateError) throw updateError
+    if (updateError) {
+      console.error("[membership-gifts] gift update failed", JSON.stringify(updateError))
+      return NextResponse.json({ error: `Geschenk konnte nicht verarbeitet werden: ${updateError.message || updateError.code || "Datenbankfehler"}` }, { status: 500 })
+    }
     void sendMembershipDM(discordId, { title: "Geschenk angenommen", description: `Deine **${plan.name}** wurde aktiviert. Viel Spaß bei Rex’s Diner!`, color: 0x3DDC97 })
     return NextResponse.json({ message: "Dein Geschenk wurde angenommen und aktiviert." })
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("[membership-gifts] POST failed", error)
-    const details = error instanceof Error ? error.message : "Unbekannter Datenbankfehler."
-    return NextResponse.json({ error: `Geschenk konnte nicht verarbeitet werden: ${details}` }, { status: 500 })
+    const details = error && typeof error === "object" && "message" in error ? String(error.message) : JSON.stringify(error)
+    return NextResponse.json({ error: `Geschenk konnte nicht verarbeitet werden: ${details || "Unbekannter Datenbankfehler."}` }, { status: 500 })
   }
 }
