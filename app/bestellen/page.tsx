@@ -66,6 +66,7 @@ export default function BestellenPage() {
   const [discountCodes, setDiscountCodes] = useState<DiscountCode[]>([])
   const [menuRatings, setMenuRatings] = useState<MenuItemRating[]>([])
   const [showMinimumOrderWarning, setShowMinimumOrderWarning] = useState(false)
+  const [orderNotice, setOrderNotice] = useState<{ title: string; message: string; success: boolean } | null>(null)
 
   useEffect(() => {
     const loadData = async () => {
@@ -481,14 +482,14 @@ export default function BestellenPage() {
     const savedOrder = await saveOrder(order)
 
     if (!savedOrder) {
-      alert("Fehler beim Speichern der Bestellung. Bitte versuchen Sie es erneut.")
+      setOrderNotice({ title: "Bestellung konnte nicht gespeichert werden", message: "Bitte versuche es erneut. Deine Daten wurden nicht verloren.", success: false })
       return
     }
 
     await sendDiscordNotification({ ...order, id: savedOrder.id, customerInfo })
     await sendUserConfirmationDM(customerInfo.discordId, { ...order, id: savedOrder.id })
 
-    alert("Bestellung erfolgreich aufgegeben!")
+    setOrderNotice({ title: "Bestellung erfolgreich aufgegeben", message: "Deine Bestellung wurde sicher übermittelt. Wir kümmern uns jetzt darum.", success: true })
 
     setCart([])
     setCustomerInfo({ name: "", discordId: "", phone: "", address: "" })
@@ -1108,6 +1109,25 @@ export default function BestellenPage() {
                 >
                   Warenkorb anpassen
                 </Button>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {orderNotice && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
+            <Card className="w-full max-w-md border-border bg-card shadow-2xl">
+              <CardHeader className="flex flex-row items-start gap-4">
+                <div className={`mt-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${orderNotice.success ? "bg-emerald-500/15 text-emerald-500" : "bg-red-500/15 text-red-500"}`}>
+                  <CheckCircle className="h-5 w-5" />
+                </div>
+                <div className="space-y-1">
+                  <CardTitle>{orderNotice.title}</CardTitle>
+                  <p className="text-sm text-muted-foreground">{orderNotice.message}</p>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <Button className="w-full" onClick={() => setOrderNotice(null)}>Schließen</Button>
               </CardContent>
             </Card>
           </div>
