@@ -35,6 +35,8 @@ import {
   Clock,
   AlignLeft,
   MapPin,
+  Gift,
+  Search,
 } from "lucide-react"
 
 import { getMenuItems, saveMenuItems, exportMenuToFile, importMenuFromFile, type MenuItem } from "@/lib/menu-data"
@@ -788,6 +790,13 @@ const [discountCodes, setDiscountCodes] = useState<DiscountCode[]>([])
   const [membershipError, setMembershipError] = useState("")
   const [membershipSaving, setMembershipSaving] = useState(false)
   const [editingMembershipId, setEditingMembershipId] = useState<string | null>(null)
+  const [giftUsers, setGiftUsers] = useState<Array<{ id: number; username: string; discord_user_id?: string; full_name?: string }>>([])
+  const [giftUserQuery, setGiftUserQuery] = useState("")
+  const [selectedGiftUser, setSelectedGiftUser] = useState<{ id: number; username: string; discord_user_id?: string; full_name?: string } | null>(null)
+  const [giftPlanId, setGiftPlanId] = useState("")
+  const [giftDuration, setGiftDuration] = useState("1")
+  const [giftMessage, setGiftMessage] = useState("")
+  const [giftSaving, setGiftSaving] = useState(false)
   const [membershipForm, setMembershipForm] = useState({
     name: "",
     description: "",
@@ -1109,6 +1118,29 @@ const [discountCodes, setDiscountCodes] = useState<DiscountCode[]>([])
     } finally {
       setMembershipSaving(false)
     }
+  }
+
+  const searchGiftUsers = async () => {
+    const response = await fetch(`/api/admin/membership-gifts?q=${encodeURIComponent(giftUserQuery)}`, { headers: { "x-admin-username": localStorage.getItem("currentUser") || "" } })
+    const data = await response.json().catch(() => ({}))
+    if (response.ok) {
+      setGiftUsers(data.users ?? [])
+      if (!giftPlanId && data.plans?.[0]) setGiftPlanId(data.plans[0].id)
+    } else setGiftMessage(data.error || "Nutzer konnten nicht geladen werden.")
+  }
+
+  const createMembershipGift = async () => {
+    if (!selectedGiftUser) return setGiftMessage("Bitte zuerst einen Empfänger auswählen.")
+    setGiftSaving(true)
+    setGiftMessage("")
+    const response = await fetch("/api/admin/membership-gifts", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-admin-username": localStorage.getItem("currentUser") || "" },
+      body: JSON.stringify({ userId: selectedGiftUser.id, planId: giftPlanId, durationMonths: Number(giftDuration) }),
+    })
+    const data = await response.json().catch(() => ({}))
+    setGiftSaving(false)
+    setGiftMessage(response.ok ? "Geschenk erstellt und per Discord-DM verschickt." : data.error || "Geschenk konnte nicht erstellt werden.")
   }
 
   const deleteMembershipPlan = async (id: string) => {
@@ -5654,6 +5686,27 @@ const [discountCodes, setDiscountCodes] = useState<DiscountCode[]>([])
                     <CardContent className="p-4 text-sm text-destructive">{membershipError}</CardContent>
                   </Card>
                 )}
+
+                <Card className="border-orange-500/30 bg-orange-500/5">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2"><Gift className="h-5 w-5 text-orange-500" /> Mitgliedschaft verschenken</CardTitle>
+                    <p className="text-sm text-muted-foreground">Sende einem Nutzer ein auspackbares Geschenk per Discord-DM.</p>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="flex gap-2">
+                      <Input value={giftUserQuery} onChange={(e) => setGiftUserQuery(e.target.value)} placeholder="Username, Name oder Discord-ID" />
+                      <Button variant="outline" onClick={searchGiftUsers}><Search className="mr-2 h-4 w-4" />Suchen</Button>
+                    </div>
+                    {giftUsers.length > 0 && <div className="grid gap-2 md:grid-cols-2">{giftUsers.map((user) => <button key={user.id} type="button" onClick={() => setSelectedGiftUser(user)} className={`rounded-lg border p-3 text-left text-sm transition ${selectedGiftUser?.id === user.id ? "border-orange-500 bg-orange-500/10" : "border-border hover:border-orange-400"}`}><span className="font-medium">{user.username}</span><span className="block text-muted-foreground">{user.full_name || user.discord_user_id || ""}</span></button>)}</div>}
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <div><Label>Mitgliedschaft</Label><select value={giftPlanId} onChange={(e) => setGiftPlanId(e.target.value)} className="mt-2 flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"><option value="">Auswählen...</option>{membershipPlans.filter((plan) => plan.active).map((plan) => <option key={plan.id} value={plan.id}>{plan.name}</option>)}</select></div>
+                      <div><Label>Laufzeit in Monaten</Label><Input className="mt-2" type="number" min="1" max="36" value={giftDuration} onChange={(e) => setGiftDuration(e.target.value)} /></div>
+                    </div>
+                    {selectedGiftUser && <p className="text-sm text-muted-foreground">Ausgewählt: <span className="font-medium text-foreground">{selectedGiftUser.username}</span></p>}
+                    <Button onClick={createMembershipGift} disabled={giftSaving || !selectedGiftUser || !giftPlanId}><Gift className="mr-2 h-4 w-4" />{giftSaving ? "Geschenk wird erstellt..." : "Geschenk erstellen und senden"}</Button>
+                    {giftMessage && <p className="text-sm text-muted-foreground">{giftMessage}</p>}
+                  </CardContent>
+                </Card>
 
                 <Card>
                   <CardHeader>

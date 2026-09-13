@@ -112,6 +112,8 @@ CREATE TABLE IF NOT EXISTS public.discount_codes (
   max_usages INTEGER DEFAULT 0,
   usage_count INTEGER DEFAULT 0,
   active BOOLEAN DEFAULT true,
+  owner_discord_id TEXT,
+  membership_contract_id BIGINT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
@@ -120,7 +122,9 @@ ALTER TABLE public.discount_codes
   ALTER COLUMN id TYPE TEXT USING id::text,
   ADD COLUMN IF NOT EXISTS valid_until TEXT,
   ADD COLUMN IF NOT EXISTS max_usages INTEGER DEFAULT 0,
-  ADD COLUMN IF NOT EXISTS usage_count INTEGER DEFAULT 0;
+  ADD COLUMN IF NOT EXISTS usage_count INTEGER DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS owner_discord_id TEXT,
+  ADD COLUMN IF NOT EXISTS membership_contract_id BIGINT;
 
 CREATE TABLE IF NOT EXISTS public.hausverbote (
   id BIGSERIAL PRIMARY KEY,
@@ -176,6 +180,21 @@ CREATE TABLE IF NOT EXISTS public.calendar_events (
   created_at timestamp with time zone DEFAULT now(),
   updated_at timestamp with time zone DEFAULT now(),
   location text
+);
+
+CREATE TABLE IF NOT EXISTS public.membership_gifts (
+  id BIGSERIAL PRIMARY KEY,
+  token TEXT UNIQUE NOT NULL,
+  recipient_user_id INTEGER REFERENCES public.users(id) ON DELETE CASCADE,
+  recipient_discord_id TEXT NOT NULL,
+  plan_id TEXT NOT NULL,
+  duration_months INTEGER NOT NULL CHECK (duration_months BETWEEN 1 AND 36),
+  ends_at TIMESTAMP WITH TIME ZONE NOT NULL,
+  status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'accepted', 'rejected', 'expired')),
+  created_by TEXT NOT NULL,
+  accepted_at TIMESTAMP WITH TIME ZONE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 -- ============================================

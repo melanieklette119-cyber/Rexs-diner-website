@@ -137,11 +137,19 @@ export async function POST(request: Request) {
     }
 
     if (plan.includes_discount && plan.discount_percent && contract) {
-      await supabase.from("membership_discount_codes").insert({
-        contract_id: contract.id,
-        code: makeDiscountCode(),
+      const personalCode = makeDiscountCode()
+      const { error: discountError } = await supabase.from("discount_codes").insert({
+        id: `membership-${contract.id}`,
+        code: personalCode,
         discount_percent: plan.discount_percent,
+        valid_until: contract.minimum_end_at,
+        max_usages: 0,
+        usage_count: 0,
+        active: true,
+        owner_discord_id: discordId,
+        membership_contract_id: contract.id,
       })
+      if (discountError) throw discountError
     }
 
     void sendMembershipDM(discordId, {

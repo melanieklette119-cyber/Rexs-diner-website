@@ -44,7 +44,7 @@ local function startTabletEmote(path)
   tabletOpening = true
   TaskPlayAnim(ped, tabletPickupAnimation, tabletPickupAnimationName, 8.0, -8.0, 5000, 49, 0.0, false, false, false)
   SetNuiFocus(true, true)
-  SendNUIMessage({ action = 'open' })
+  SendNUIMessage({ action = 'open', path = tabletTargetPath })
 
   CreateThread(function()
     Wait(5000)
@@ -145,20 +145,21 @@ CreateThread(function()
 
   for _, target in ipairs(targets) do
     if target and target.coords and #(target.coords) >= 0.1 then
+      local zoneTarget = target
       exports.ox_target:addBoxZone({
-        coords = target.coords,
-        size = target.size or vec3(2.0, 2.0, 2.0),
-        rotation = target.rotation or 0.0,
+        coords = zoneTarget.coords,
+        size = zoneTarget.size or vec3(2.0, 2.0, 2.0),
+        rotation = zoneTarget.rotation or 0.0,
         debug = false,
         options = {
           {
             name = 'rex_order_open',
             icon = 'fa-solid fa-utensils',
-            label = 'Bestellkarte öffnen',
-            distance = target.distance or 2.5,
+            label = zoneTarget.label or 'Bestellkarte öffnen',
+            distance = zoneTarget.distance or 2.5,
             onSelect = function()
-          startTabletEmote(target.path)
-        end,
+              startTabletEmote(zoneTarget.path)
+            end,
           },
         },
       })
@@ -177,9 +178,10 @@ RegisterNetEvent('rex_order:loginResult', function(result)
   SendNUIMessage({ action = 'authSuccess', url = result.url })
 end)
 
-RegisterNUICallback('startAuth', function(_, callback)
+RegisterNUICallback('startAuth', function(data, callback)
+  local requestedPath = type(data) == 'table' and type(data.path) == 'string' and data.path ~= '' and data.path or tabletTargetPath
   SendNUIMessage({ action = 'authenticating' })
-  TriggerServerEvent('rex_order:requestLogin', tabletTargetPath)
+  TriggerServerEvent('rex_order:requestLogin', requestedPath)
   callback({ ok = true })
 end)
 

@@ -248,6 +248,11 @@ export default function BestellenPage() {
 
     const code = discountCodes.find((c) => c.code === discountCode.toUpperCase())
 
+    if (code?.ownerDiscordId && code.ownerDiscordId !== discordUser?.id) {
+      setDiscountError("Dieser Mitgliedschaftsrabatt gehört einem anderen Nutzer.")
+      return
+    }
+
     if (!code) {
       setDiscountError("Rabattcode nicht gefunden")
       return
@@ -268,12 +273,12 @@ export default function BestellenPage() {
       return
     }
 
-    if (code.usageCount >= code.maxUsages) {
+    if (code.maxUsages > 0 && code.usageCount >= code.maxUsages) {
       setDiscountError("Maximale Verwendungen für diesen Code erreicht")
       return
     }
 
-    const remainingUsages = code.maxUsages - code.usageCount - 1
+    const remainingUsages = code.maxUsages > 0 ? code.maxUsages - code.usageCount - 1 : 0
     setAppliedDiscount({
       code: code.code,
       percent: code.discountPercent,
