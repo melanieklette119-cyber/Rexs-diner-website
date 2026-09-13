@@ -81,7 +81,8 @@ CreateThread(function()
         label = 'Bestellkarte öffnen',
         distance = target.distance,
         onSelect = function()
-          TriggerServerEvent('rex_order:requestLogin')
+          SetNuiFocus(true, true)
+          SendNUIMessage({ action = 'open' })
         end,
       },
     },
@@ -90,16 +91,17 @@ end)
 
 RegisterNetEvent('rex_order:loginResult', function(result)
   if result.error then
-    lib.notify({ title = "Rex's Diner", description = result.error, type = 'error' })
-    if result.loginUrl then
-      SetNuiFocus(false, false)
-      SendNUIMessage({ action = 'openExternal', url = result.loginUrl })
-    end
+    SendNUIMessage({ action = 'authFailed', message = result.error, loginUrl = result.loginUrl })
     return
   end
 
-  SetNuiFocus(true, true)
-  SendNUIMessage({ action = 'open', url = result.url })
+  SendNUIMessage({ action = 'authSuccess', url = result.url })
+end)
+
+RegisterNUICallback('startAuth', function(_, callback)
+  SendNUIMessage({ action = 'authenticating' })
+  TriggerServerEvent('rex_order:requestLogin')
+  callback({ ok = true })
 end)
 
 RegisterNUICallback('NUIFocusOff', function(_, callback)
