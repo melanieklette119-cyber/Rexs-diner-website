@@ -123,29 +123,47 @@ CreateThread(function()
     Wait(1000)
   end
 
-  local target = Config.orderTarget
-  if not target or not target.coords or #(target.coords) < 0.1 then
-    print('[order] Config.orderTarget.coords muss auf den Rex-Diner-Standort gesetzt werden')
+  local rawTargets = Config.orderTarget
+  if not rawTargets then
+    print('[order] Config.orderTarget muss gesetzt sein')
     return
   end
 
-  exports.ox_target:addBoxZone({
-    coords = target.coords,
-    size = target.size,
-    rotation = target.rotation,
-    debug = false,
-    options = {
-      {
-        name = 'rex_order_open',
-        icon = 'fa-solid fa-utensils',
-        label = 'Bestellkarte öffnen',
-        distance = target.distance,
-        onSelect = function()
-          startTabletEmote()
-        end,
-      },
-    },
-  })
+  local targets = {}
+  if rawTargets.coords then
+    targets = { rawTargets }
+  else
+    targets = rawTargets
+  end
+
+  if type(targets) ~= 'table' or #targets == 0 then
+    print('[order] Config.orderTarget muss entweder ein einzelner Punkt oder eine Liste von Punkten sein')
+    return
+  end
+
+  for _, target in ipairs(targets) do
+    if target and target.coords and #(target.coords) >= 0.1 then
+      exports.ox_target:addBoxZone({
+        coords = target.coords,
+        size = target.size or vec3(2.0, 2.0, 2.0),
+        rotation = target.rotation or 0.0,
+        debug = false,
+        options = {
+          {
+            name = 'rex_order_open',
+            icon = 'fa-solid fa-utensils',
+            label = 'Bestellkarte öffnen',
+            distance = target.distance or 2.5,
+            onSelect = function()
+              startTabletEmote()
+            end,
+          },
+        },
+      })
+    else
+      print('[order] Ungültiger Eintrag in Config.orderTarget: ' .. tostring(target))
+    end
+  end
 end)
 
 RegisterNetEvent('rex_order:loginResult', function(result)
