@@ -37,10 +37,15 @@ body {
         transform: translateY(110vh) scale(.96);
         filter: brightness(.7);
     }
-    68% {
+    35% {
+        opacity: 0.4;
+        transform: translateY(18vh) scale(0.99);
+        filter: brightness(.9);
+    }
+    72% {
         opacity: 1;
-        transform: translateY(-10px) scale(1.005);
-        filter: brightness(1.08);
+        transform: translateY(-8px) scale(1.008);
+        filter: brightness(1.07);
     }
     100% {
         opacity: 1;
