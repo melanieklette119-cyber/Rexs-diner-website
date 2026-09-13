@@ -25,9 +25,13 @@ window.addEventListener('message', function(event) {
     }
 
     if (data.action === 'open') {
+        if (!panel) return;
         if (data.url) {
             const iframe = panel.querySelector('iframe');
-            if (iframe) iframe.src = data.url;
+            if (iframe) {
+                iframe.src = data.url;
+                iframe.style.visibility = 'visible';
+            }
         }
         panel.classList.add('visible');
         return;
