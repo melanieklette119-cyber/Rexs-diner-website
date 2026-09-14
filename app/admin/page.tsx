@@ -797,6 +797,8 @@ const [discountCodes, setDiscountCodes] = useState<DiscountCode[]>([])
   const [giftDuration, setGiftDuration] = useState("1")
   const [giftMessage, setGiftMessage] = useState("")
   const [giftSaving, setGiftSaving] = useState(false)
+  const [showGiftForm, setShowGiftForm] = useState(false)
+  const [showMembershipForm, setShowMembershipForm] = useState(false)
   const [membershipForm, setMembershipForm] = useState({
     name: "",
     description: "",
@@ -1053,8 +1055,9 @@ const [discountCodes, setDiscountCodes] = useState<DiscountCode[]>([])
     }
   }
 
-  const resetMembershipForm = () => {
-    setEditingMembershipId(null)
+const resetMembershipForm = () => {
+  setEditingMembershipId(null)
+  setShowMembershipForm(false)
     setMembershipForm({
       name: "",
       description: "",
@@ -1159,8 +1162,9 @@ const [discountCodes, setDiscountCodes] = useState<DiscountCode[]>([])
     setMembershipPlans((plans) => plans.filter((plan) => plan.id !== id))
   }
 
-  const editMembershipPlan = (plan: MembershipPlan) => {
-    setEditingMembershipId(plan.id)
+const editMembershipPlan = (plan: MembershipPlan) => {
+  setShowMembershipForm(true)
+  setEditingMembershipId(plan.id)
     setMembershipForm({
       name: plan.name,
       description: plan.description || "",
@@ -5690,7 +5694,18 @@ const [discountCodes, setDiscountCodes] = useState<DiscountCode[]>([])
                   </Card>
                 )}
 
-                <Card className="border-orange-500/30 bg-orange-500/5">
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <Button variant="outline" className="h-14 justify-start border-orange-500/30" onClick={() => setShowGiftForm((visible) => !visible)}>
+                    <Gift className="mr-3 h-5 w-5 text-orange-500" />
+                    <span><span className="block font-semibold">Mitgliedschaft verschenken</span><span className="block text-xs text-muted-foreground">Geschenk per Discord senden</span></span>
+                  </Button>
+                  <Button variant="outline" className="h-14 justify-start" onClick={() => { setShowMembershipForm((visible) => !visible); setEditingMembershipId(null) }}>
+                    <Plus className="mr-3 h-5 w-5" />
+                    <span><span className="block font-semibold">Neue Mitgliedschaft erstellen</span><span className="block text-xs text-muted-foreground">Neue Stufe anlegen</span></span>
+                  </Button>
+                </div>
+
+                {showGiftForm && <Card className="border-orange-500/30 bg-orange-500/5">
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2"><Gift className="h-5 w-5 text-orange-500" /> Mitgliedschaft verschenken</CardTitle>
                     <p className="text-sm text-muted-foreground">Sende einem Nutzer ein auspackbares Geschenk per Discord-DM.</p>
@@ -5709,9 +5724,10 @@ const [discountCodes, setDiscountCodes] = useState<DiscountCode[]>([])
                     <Button onClick={createMembershipGift} disabled={giftSaving || !selectedGiftUser || !giftPlanId}><Gift className="mr-2 h-4 w-4" />{giftSaving ? "Geschenk wird erstellt..." : "Geschenk erstellen und senden"}</Button>
                     {giftMessage && <p className="text-sm text-muted-foreground">{giftMessage}</p>}
                   </CardContent>
-                </Card>
+                  <div className="flex justify-end px-6 pb-6"><Button variant="ghost" onClick={() => setShowGiftForm(false)}>Abbrechen</Button></div>
+                </Card>}
 
-                <Card>
+                {showMembershipForm && <Card>
                   <CardHeader>
                     <CardTitle>{editingMembershipId ? "Mitgliedschaft bearbeiten" : "Neue Mitgliedschaft erstellen"}</CardTitle>
                   </CardHeader>
@@ -5835,12 +5851,10 @@ const [discountCodes, setDiscountCodes] = useState<DiscountCode[]>([])
                       <Button onClick={saveMembershipPlan} disabled={membershipSaving}>
                         {membershipSaving ? "Speichert..." : editingMembershipId ? "Änderungen speichern" : "Mitgliedschaft erstellen"}
                       </Button>
-                      {editingMembershipId && (
-                        <Button variant="outline" onClick={resetMembershipForm}>Abbrechen</Button>
-                      )}
+                      <Button variant="outline" onClick={resetMembershipForm}>Abbrechen</Button>
                     </div>
                   </CardContent>
-                </Card>
+                </Card>}
 
                 {membershipLoading && membershipPlans.length === 0 ? (
                   <Card><CardContent className="p-8 text-center text-muted-foreground">Mitgliedschaften werden geladen...</CardContent></Card>
