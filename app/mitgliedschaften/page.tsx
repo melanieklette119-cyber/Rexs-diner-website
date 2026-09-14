@@ -20,6 +20,7 @@ export default function MitgliedschaftenPage() {
   const [form, setForm] = useState({ fullName: "", discordId: "", bankAccountId: "" })
   const [accepted, setAccepted] = useState(false)
   const [message, setMessage] = useState("")
+  const [personalDiscount, setPersonalDiscount] = useState<{ code: string; discount_percent: number } | null>(null)
     useEffect(() => {
       const session = getDiscordSession()
       setDiscordUser(session)
@@ -37,6 +38,7 @@ export default function MitgliedschaftenPage() {
       .then((d) => {
         setPlans(Array.isArray(d.plans) ? d.plans : [])
         setHasMembershipHistory(Boolean(d.hasMembershipHistory))
+        if (d.personalDiscount?.code) setPersonalDiscount(d.personalDiscount)
       })
   }, [])
   if (!discordUser) {

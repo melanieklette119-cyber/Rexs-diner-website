@@ -93,6 +93,24 @@ export default function BestellenPage() {
       const session = getDiscordSession()
       if (session) {
         setDiscordUser(session)
+        const membershipResponse = await fetch("/api/memberships?mine=true")
+        const membershipData = await membershipResponse.json().catch(() => ({}))
+        if (membershipResponse.ok && membershipData.personalDiscount?.code) {
+          const personal = membershipData.personalDiscount
+          const mappedCode: DiscountCode = {
+            id: personal.id,
+            code: personal.code,
+            discountPercent: personal.discount_percent,
+            validUntil: personal.valid_until,
+            maxUsages: personal.max_usages,
+            usageCount: personal.usage_count,
+            active: personal.active,
+            ownerDiscordId: personal.owner_discord_id,
+            membershipContractId: personal.membership_contract_id,
+          }
+          setDiscountCodes((current) => current.some((code) => code.id === mappedCode.id) ? current : [mappedCode, ...current])
+          setDiscountCode(mappedCode.code)
+        }
         
         // Load user profile
         const profile = await getUserProfile(session.id)
