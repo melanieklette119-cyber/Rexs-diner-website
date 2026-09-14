@@ -123,6 +123,7 @@ export async function POST(request: Request) {
 
     const now = new Date()
     const months = Math.max(1, plan.min_duration_months)
+    const isLifetime = Boolean(plan.is_lifetime)
 
     const { data: contract, error } = await supabase
       .from("membership_contracts")
@@ -133,7 +134,8 @@ export async function POST(request: Request) {
         discord_id: fields.discordId,
         fivem_bank_account_id: fields.bankAccountId,
         status: "active",
-        minimum_end_at: addMonths(now, months),
+        minimum_end_at: isLifetime ? "9999-12-31T23:59:59.000Z" : addMonths(now, months),
+        is_lifetime: isLifetime,
         next_charge_at: now.toISOString(),
         billing_interval: plan.billing_interval,
       })

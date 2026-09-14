@@ -182,6 +182,9 @@ CREATE TABLE IF NOT EXISTS public.calendar_events (
   location text
 );
 
+ALTER TABLE public.membership_plans ADD COLUMN IF NOT EXISTS is_lifetime BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE public.membership_contracts ADD COLUMN IF NOT EXISTS is_lifetime BOOLEAN NOT NULL DEFAULT false;
+
 CREATE TABLE IF NOT EXISTS public.membership_gifts (
   id BIGSERIAL PRIMARY KEY,
   token TEXT UNIQUE NOT NULL,

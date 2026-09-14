@@ -803,6 +803,7 @@ const [discountCodes, setDiscountCodes] = useState<DiscountCode[]>([])
     price: "0",
     billing_interval: "monthly" as MembershipPlan["billing_interval"],
     min_duration_months: "1",
+    is_lifetime: false,
     cancellation_notice_months: "0",
     newcomer_only: false,
     includes_discount: false,
@@ -1060,6 +1061,7 @@ const [discountCodes, setDiscountCodes] = useState<DiscountCode[]>([])
       price: "0",
       billing_interval: "monthly",
       min_duration_months: "1",
+      is_lifetime: false,
       cancellation_notice_months: "0",
       newcomer_only: false,
       includes_discount: false,
@@ -1164,8 +1166,9 @@ const [discountCodes, setDiscountCodes] = useState<DiscountCode[]>([])
       description: plan.description || "",
       price: String(Math.round(Number(plan.price))),
       billing_interval: plan.billing_interval,
-      min_duration_months: String(plan.min_duration_months),
-      cancellation_notice_months: String(plan.cancellation_notice_months),
+    min_duration_months: String(plan.min_duration_months || 1),
+    is_lifetime: Boolean(plan.is_lifetime),
+    cancellation_notice_months: String(plan.cancellation_notice_months),
       newcomer_only: plan.newcomer_only,
       includes_discount: plan.includes_discount,
       discount_percent: String(plan.discount_percent ?? 10),
@@ -5762,14 +5765,18 @@ const [discountCodes, setDiscountCodes] = useState<DiscountCode[]>([])
                         </select>
                       </div>
                       <div>
-                        <Label htmlFor="membership-min-duration">Mindestlaufzeit (Monate)</Label>
-                        <Input
-                          id="membership-min-duration"
-                          type="number"
-                          min="1"
-                          value={membershipForm.min_duration_months}
-                          onChange={(e) => setMembershipForm({ ...membershipForm, min_duration_months: e.target.value })}
-                        />
+                        <Label htmlFor="membership-min-duration">Mindestlaufzeit</Label>
+                        <div className="flex gap-2">
+                          <Input
+                            id="membership-min-duration"
+                            type="number"
+                            min="1"
+                            disabled={membershipForm.is_lifetime}
+                            value={membershipForm.min_duration_months}
+                            onChange={(e) => setMembershipForm({ ...membershipForm, min_duration_months: e.target.value })}
+                          />
+                          <label className="flex shrink-0 items-center gap-2 text-sm"><input type="checkbox" checked={membershipForm.is_lifetime} onChange={(e) => setMembershipForm({ ...membershipForm, is_lifetime: e.target.checked })} />Lifetime</label>
+                        </div>
                       </div>
                       <div>
                         <Label htmlFor="membership-notice">Kündigungsfrist (Monate)</Label>
@@ -5854,7 +5861,7 @@ const [discountCodes, setDiscountCodes] = useState<DiscountCode[]>([])
                           <p className="text-sm text-muted-foreground">{plan.description || "Keine Beschreibung"}</p>
                           <div className="grid grid-cols-2 gap-2 text-sm text-muted-foreground">
                             <span>Intervall: {plan.billing_interval === "daily" ? "täglich" : plan.billing_interval === "weekly" ? "wöchentlich" : "monatlich"}</span>
-                            <span>Mindestlaufzeit: {plan.min_duration_months} Mon.</span>
+                            <span>Mindestlaufzeit: {plan.is_lifetime ? "Lifetime" : `${plan.min_duration_months} Mon.`}</span>
                             <span>Kündigungsfrist: {plan.cancellation_notice_months} Mon.</span>
                             <span>{plan.includes_discount ? `${plan.discount_percent ?? 0}% Rabatt` : "Kein Rabatt"}</span>
                           </div>
