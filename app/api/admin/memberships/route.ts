@@ -37,11 +37,12 @@ function parsePlan(body: Record<string, unknown>) {
   const cancellationNoticeMonths = Number(body.cancellation_notice_months)
   const discountPercent = Number(body.discount_percent)
   const billingInterval = String(body.billing_interval ?? "")
+  const isLifetime = body.is_lifetime === true
 
   if (!name || name.length > 120) throw new Error("Bitte einen gültigen Namen für die Mitgliedschaft eingeben.")
   if (!Number.isFinite(price) || price < 0) throw new Error("Bitte einen gültigen Preis eingeben.")
   if (!["daily", "weekly", "monthly"].includes(billingInterval)) throw new Error("Bitte ein gültiges Abrechnungsintervall auswählen.")
-  if (!Number.isInteger(minDurationMonths) || minDurationMonths < 1) throw new Error("Bitte eine gültige Mindestlaufzeit eingeben.")
+  if (!isLifetime && (!Number.isInteger(minDurationMonths) || minDurationMonths < 1)) throw new Error("Bitte eine gültige Mindestlaufzeit eingeben oder Lifetime auswählen.")
   if (!Number.isInteger(cancellationNoticeMonths) || cancellationNoticeMonths < 0) throw new Error("Bitte eine gültige Kündigungsfrist eingeben.")
   if (!Number.isInteger(discountPercent) || discountPercent < 0 || discountPercent > 100) throw new Error("Bitte einen Rabatt zwischen 0 und 100 Prozent eingeben.")
 
@@ -50,7 +51,8 @@ function parsePlan(body: Record<string, unknown>) {
     description,
     price,
     billing_interval: billingInterval,
-    min_duration_months: minDurationMonths,
+    min_duration_months: isLifetime ? 0 : minDurationMonths,
+    is_lifetime: isLifetime,
     cancellation_notice_months: cancellationNoticeMonths,
     newcomer_only: body.newcomer_only === true,
     includes_discount: body.includes_discount === true,

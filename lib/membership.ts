@@ -56,6 +56,7 @@ export type MembershipPlan = {
   price: number
   billing_interval: "daily" | "weekly" | "monthly"
   min_duration_months: number
+  is_lifetime: boolean
   cancellation_notice_months: number
   newcomer_only: boolean
   includes_discount: boolean

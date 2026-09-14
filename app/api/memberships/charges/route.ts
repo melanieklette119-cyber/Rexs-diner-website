@@ -68,7 +68,7 @@ export async function POST(request: Request) {
   if (!body.contractId || !body.idempotencyKey || !["succeeded", "failed"].includes(body.status)) return NextResponse.json({ error: "Ungültiger Abbuchungsstatus." }, { status: 400 })
   const supabase = await createClient()
   if (!supabase) return NextResponse.json({ error: "Supabase ist nicht verfügbar." }, { status: 503 })
-  const { data: contract } = await supabase.from("membership_contracts").select("id, user_id, discord_id, status, minimum_end_at, next_charge_at, fivem_bank_account_id, membership_plans(price, billing_interval)").eq("id", body.contractId).in("status", ["active", "pending_cancellation"]).single()
+  const { data: contract } = await supabase.from("membership_contracts").select("id, user_id, discord_id, status, is_lifetime, minimum_end_at, next_charge_at, fivem_bank_account_id, membership_plans(price, billing_interval)").eq("id", body.contractId).in("status", ["active", "pending_cancellation"]).single()
   if (!contract) return NextResponse.json({ error: "Vertrag nicht gefunden." }, { status: 404 })
   if (contract.status === "pending_cancellation" && new Date(contract.minimum_end_at) <= new Date()) {
     await supabase.from("membership_contracts").update({ status: "cancelled", updated_at: new Date().toISOString() }).eq("id", contract.id)
@@ -98,7 +98,7 @@ export async function POST(request: Request) {
       next = new Date(addBillingInterval(next, plan?.billing_interval as MembershipPlan["billing_interval"]))
     }
     const updates: { next_charge_at: string; updated_at: string; status?: string } = {
-      next_charge_at: next.toISOString(),
+      next_charge_at: contract.is_lifetime ? "9999-12-31T23:59:59.000Z" : next.toISOString(),
       updated_at: new Date().toISOString(),
     }
     if (contract.status === "pending_cancellation" && new Date(next) >= new Date(contract.minimum_end_at)) updates.status = "cancelled"
