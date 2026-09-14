@@ -159,8 +159,15 @@ export async function POST(request: Request) {
         active: true,
         owner_discord_id: discordId,
         membership_contract_id: contract.id,
-      })
+      }, { onConflict: "id" })
       if (discountError) throw discountError
+
+      const { error: membershipDiscountError } = await supabase.from("membership_discount_codes").upsert({
+        contract_id: contract.id,
+        code: personalCode,
+        discount_percent: plan.discount_percent,
+      }, { onConflict: "contract_id" })
+      if (membershipDiscountError) throw membershipDiscountError
     }
 
     void sendMembershipDM(discordId, {
