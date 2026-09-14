@@ -5,6 +5,7 @@ import { Analytics } from "@vercel/analytics/next"
 import { Suspense } from "react"
 import { Navigation } from "@/components/navigation"
 import { FiveMThemeMarker } from "@/components/fivem-theme-marker"
+import { AlertPopout } from "@/components/alert-popout"
 // Einkommentieren = Cookies werden beim Tab-Schliessen geloescht (Session-Modus)
 // Auskommentiert  = Cookies laufen nur nach 12h ab (Standard)
 // import { DiscordSessionGuard } from "@/components/discord-session-guard"
@@ -41,6 +42,7 @@ export default function RootLayout({
         {/* <DiscordSessionGuard /> */}
         <Suspense fallback={null}>{children}</Suspense>
         <Analytics />
+        <AlertPopout />
       </body>
     </html>
   )
