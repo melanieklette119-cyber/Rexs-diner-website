@@ -43,6 +43,17 @@ export async function GET(request: Request) {
   const { data, error } = await supabase.from("membership_contracts").select("id, status, discord_id, full_name, minimum_end_at, fivem_bank_account_id, next_charge_at, membership_plans(price, billing_interval)").in("status", ["active", "pending_cancellation"]).lte("next_charge_at", now.toISOString()).limit(100)
   if (error) return NextResponse.json({ error: "Fällige Abbuchungen konnten nicht geladen werden." }, { status: 500 })
   const due = (data ?? []).filter((charge) => charge.status === "active" || new Date(charge.next_charge_at) <= new Date(charge.minimum_end_at))
+  const reminderCutoff = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000)
+  const { data: gifts } = await supabase.from("membership_gifts").select("id, recipient_discord_id, ends_at, reminder_sent_at").eq("status", "accepted")
+  const giftDiscordIds = (data ?? []).filter((charge) => String(charge.fivem_bank_account_id ?? "").startsWith("gift-") && charge.discord_id && new Date(charge.minimum_end_at) > now && new Date(charge.minimum_end_at) <= reminderCutoff && !(gifts ?? []).some((gift) => gift.recipient_discord_id === charge.discord_id && gift.reminder_sent_at)).map((charge) => charge.discord_id)
+  if (giftDiscordIds.length > 0) {
+    await Promise.all(giftDiscordIds.map((discordId) => sendMembershipDM(discordId, {
+      title: "Deine Geschenkmitgliedschaft endet bald",
+      description: "Deine geschenkte Mitgliedschaft endet in weniger als einer Woche. Danach wird sie automatisch beendet.",
+      color: 0xF6B73C,
+    })))
+    await supabase.from("membership_gifts").update({ reminder_sent_at: now.toISOString() }).eq("status", "accepted").in("recipient_discord_id", giftDiscordIds)
+  }
   const expired = (data ?? []).filter((charge) => charge.status === "pending_cancellation" && new Date(charge.minimum_end_at) <= now).map((charge) => charge.id)
   if (expired.length > 0) {
     await supabase.from("membership_contracts").update({ status: "cancelled", updated_at: now.toISOString() }).in("id", expired)

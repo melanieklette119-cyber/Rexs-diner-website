@@ -193,6 +193,7 @@ CREATE TABLE IF NOT EXISTS public.membership_gifts (
   status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'accepted', 'rejected', 'expired')),
   created_by TEXT NOT NULL,
   accepted_at TIMESTAMP WITH TIME ZONE,
+  reminder_sent_at TIMESTAMP WITH TIME ZONE,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
