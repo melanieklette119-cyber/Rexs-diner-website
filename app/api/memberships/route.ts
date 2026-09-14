@@ -46,11 +46,20 @@ export async function GET(request: Request) {
 
       const historyCount = (data ?? []).length
       const visiblePlans = (await getMembershipPlans()).filter((plan) => !plan.newcomer_only || historyCount === 0)
+      const { data: personalDiscount } = await supabase
+        .from("discount_codes")
+        .select("id, code, discount_percent, valid_until, max_usages, usage_count, active, owner_discord_id, membership_contract_id")
+        .eq("owner_discord_id", discordId)
+        .eq("active", true)
+        .gt("valid_until", now)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle()
 
-      return NextResponse.json({ contracts: data ?? [], charges: charges ?? [], plans: visiblePlans, hasMembershipHistory: historyCount > 0 })
+      return NextResponse.json({ contracts: data ?? [], charges: charges ?? [], plans: visiblePlans, personalDiscount, hasMembershipHistory: historyCount > 0 })
     }
 
-    return NextResponse.json({ plans: await getMembershipPlans() })
+    return NextResponse.json({ plans: (await getMembershipPlans()).filter((plan) => plan.active) })
   } catch (error) {
     console.error("[memberships] GET failed", error)
     return NextResponse.json(
@@ -138,7 +147,7 @@ export async function POST(request: Request) {
 
     if (plan.includes_discount && plan.discount_percent && contract) {
       const personalCode = makeDiscountCode()
-      const { error: discountError } = await supabase.from("discount_codes").insert({
+      const { error: discountError } = await supabase.from("discount_codes").upsert({
         id: `membership-${contract.id}`,
         code: personalCode,
         discount_percent: plan.discount_percent,

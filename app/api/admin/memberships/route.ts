@@ -62,7 +62,14 @@ function parsePlan(body: Record<string, unknown>) {
 export async function GET(request: Request) {
   try {
     if (!(await getAdminClient(request))) return NextResponse.json({ error: "Nicht autorisiert." }, { status: 403 })
-    return NextResponse.json({ plans: await getMembershipPlans() })
+    const supabase = await createClient()
+    if (!supabase) throw new Error("Supabase ist nicht verfügbar.")
+    const { data, error } = await supabase
+      .from("membership_plans")
+      .select("*")
+      .order("price")
+    if (error) throw error
+    return NextResponse.json({ plans: data ?? [] })
   } catch (error) {
     console.error("[admin/memberships] GET failed", error)
     return NextResponse.json({ error: "Mitgliedschaften konnten nicht geladen werden." }, { status: 500 })
