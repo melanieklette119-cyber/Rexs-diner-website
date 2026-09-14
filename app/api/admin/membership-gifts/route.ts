@@ -77,9 +77,9 @@ export async function POST(request: Request) {
     const giftUrl = `${baseUrl}/geschenk/${token}`
     void sendMembershipDM(recipient.discord_id, {
       title: "Du hast ein Geschenk bekommen",
-      description: `Für dich wurde eine **${plan.name}** geschenkt. Öffne den Link, packe dein Geschenk aus und entscheide selbst, ob du es annimmst.`,
+      description: "Du hast ein Geschenk bekommen. Öffne den Link, packe dein Geschenk aus und entscheide selbst, ob du es annimmst.",
       color: 0xD4673E,
-      fields: [{ name: "Geschenk öffnen", value: giftUrl }, { name: "Laufzeit", value: `${durationMonths} Monat${durationMonths === 1 ? "" : "e"}`, inline: true }],
+      fields: [{ name: "Geschenk öffnen", value: giftUrl }],
     })
     return NextResponse.json({ gift }, { status: 201 })
   } catch (error) {
