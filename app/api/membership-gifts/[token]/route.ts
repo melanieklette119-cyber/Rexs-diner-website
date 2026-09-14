@@ -32,7 +32,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ tok
     if (!supabase) throw new Error("Supabase ist nicht verfügbar.")
     const { data: gift, error: giftError } = await supabase.from("membership_gifts").select("*").eq("token", token).eq("status", "pending").single()
     if (giftError || !gift || gift.recipient_discord_id !== discordId || new Date(gift.ends_at) <= new Date()) return NextResponse.json({ error: "Dieses Geschenk ist nicht verfügbar." }, { status: 404 })
-    const { data: plan, error: planError } = await supabase.from("membership_plans").select("id, name, billing_interval").eq("id", gift.plan_id).maybeSingle()
+    const { data: plan, error: planError } = await supabase.from("membership_plans").select("id, name, billing_interval, includes_discount, discount_percent").eq("id", gift.plan_id).maybeSingle()
     if (planError || !plan) return NextResponse.json({ error: "Die geschenkte Mitgliedschaft ist nicht mehr verfügbar." }, { status: 404 })
     const { data: profile } = await supabase.from("user_profiles").select("full_name, discord_username").eq("discord_id", discordId).maybeSingle()
     const now = new Date().toISOString()
@@ -62,6 +62,26 @@ export async function POST(request: Request, { params }: { params: Promise<{ tok
     if (updateError) {
       console.error("[membership-gifts] gift update failed", JSON.stringify(updateError))
       return NextResponse.json({ error: `Geschenk konnte nicht verarbeitet werden: ${updateError.message || updateError.code || "Datenbankfehler"}` }, { status: 500 })
+    }
+    if (plan.includes_discount && plan.discount_percent) {
+      const personalCode = `GIFT-${discordId}-${gift.id}`.slice(0, 40).toUpperCase()
+      const { error: discountError } = await supabase.from("discount_codes").upsert({
+        id: `membership-${gift.id}`,
+        code: personalCode,
+        discount_percent: plan.discount_percent,
+        valid_until: gift.ends_at,
+        max_usages: 0,
+        usage_count: 0,
+        active: true,
+        owner_discord_id: discordId,
+      }, { onConflict: "id" })
+      if (discountError) throw discountError
+      const { error: membershipDiscountError } = await supabase.from("membership_discount_codes").upsert({
+        contract_id: gift.id,
+        code: personalCode,
+        discount_percent: plan.discount_percent,
+      }, { onConflict: "contract_id" })
+      if (membershipDiscountError) throw membershipDiscountError
     }
     void sendMembershipDM(discordId, { title: "Geschenk angenommen", description: `Deine **${plan.name}** wurde aktiviert. Viel Spaß bei Rex’s Diner!`, color: 0x3DDC97 })
     return NextResponse.json({ message: "Dein Geschenk wurde angenommen und aktiviert." })
