@@ -61,19 +61,22 @@ export default function GiftPage() {
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-[radial-gradient(circle_at_top,#7b2d26,#171117_60%)] p-6 text-white">
+    <main className="flex min-h-screen items-center justify-center overflow-hidden bg-[radial-gradient(circle_at_top,#8d3929,#24151b_46%,#100d12_100%)] p-6 text-white">
+      <style>{`@keyframes gift-shake{0%,100%{transform:rotate(0)}25%{transform:rotate(-4deg) translateX(-2px)}75%{transform:rotate(4deg) translateX(2px)}}`}</style>
       <Card className="w-full max-w-lg overflow-hidden border-white/15 bg-black/35 text-white shadow-2xl backdrop-blur-xl">
         <CardHeader className="items-center text-center">
-          <div className={`relative mb-5 flex h-36 w-44 items-center justify-center transition-transform duration-300 ${holding ? "scale-105 animate-bounce" : ""} ${opened ? "scale-0 opacity-0" : ""}`}>
+          <div className={`relative mb-7 flex h-48 w-56 items-center justify-center transition-all duration-700 ${holding ? "scale-110" : ""} ${opened ? "scale-125 opacity-0" : ""}`}>
             {!opened && <>
-              <div className="absolute bottom-3 h-24 w-36 rounded-lg border-2 border-orange-200/40 bg-gradient-to-br from-orange-500 to-red-700 shadow-[0_20px_35px_rgba(0,0,0,.35)]" />
-              <div className="absolute bottom-3 h-24 w-7 rounded-sm bg-yellow-300/90 shadow-lg" />
-              <div className="absolute bottom-[92px] h-7 w-40 rounded-md border-2 border-orange-200/40 bg-gradient-to-r from-red-600 to-orange-500" />
-              <div className="absolute bottom-[108px] h-7 w-14 rounded-full border-4 border-yellow-300/90 border-b-0 rotate-[-24deg]" />
-              <div className="absolute bottom-[108px] h-7 w-14 rounded-full border-4 border-yellow-300/90 border-b-0 rotate-[24deg]" />
-              {holding && <div className="absolute inset-0 rounded-2xl bg-orange-300/20 blur-xl" />}
+              <div className={`absolute bottom-5 h-32 w-44 rounded-xl border border-white/20 bg-gradient-to-br from-[#e87542] via-[#bc3f32] to-[#6f1e2b] shadow-[0_25px_45px_rgba(0,0,0,.45),inset_8px_8px_20px_rgba(255,255,255,.16)] ${holding ? "animate-[gift-shake_.16s_ease-in-out_infinite]" : ""}`} />
+              <div className="absolute bottom-5 h-32 w-9 rounded-sm bg-gradient-to-b from-[#ffe6a0] via-[#f7b84b] to-[#c96b2d] shadow-[0_0_18px_rgba(255,203,94,.45)]" />
+              <div className="absolute bottom-[125px] h-9 w-48 rounded-lg border border-white/20 bg-gradient-to-r from-[#d65038] via-[#ef8550] to-[#9f2f31] shadow-lg" />
+              <div className="absolute bottom-[137px] h-12 w-16 rounded-full border-[6px] border-[#ffd66e] border-b-0 rotate-[-28deg] shadow-[0_0_12px_rgba(255,214,110,.45)]" />
+              <div className="absolute bottom-[137px] h-12 w-16 rounded-full border-[6px] border-[#ffd66e] border-b-0 rotate-[28deg] shadow-[0_0_12px_rgba(255,214,110,.45)]" />
+              <div className="absolute bottom-0 h-8 w-52 rounded-full bg-orange-950/40 blur-xl" />
+              {holding && <div className="absolute inset-0 rounded-full bg-orange-300/30 blur-2xl animate-pulse" />}
+              <span className="absolute -left-2 top-12 h-2 w-2 rounded-full bg-yellow-200 shadow-[20px_18px_0_#f7b84b,180px_8px_0_#ffd66e,160px_65px_0_#e87542]" />
             </>}
-            {opened && <Sparkles className="h-16 w-16 text-yellow-200" />}
+            {opened && <Sparkles className="h-20 w-20 text-yellow-200 animate-ping" />}
           </div>
           <CardTitle className="text-3xl">{opened ? "Dein Geschenk" : "Ein Geschenk wartet auf dich"}</CardTitle>
           <CardDescription className="text-white/70">{opened ? "Du entscheidest, ob du es annehmen möchtest." : "Halte das Geschenk gedrückt, bis es platzt."}</CardDescription>
