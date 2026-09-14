@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react"
 import { useRouter, usePathname } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
@@ -448,6 +449,7 @@ export default function AdminPage({ initialTab }: { initialTab?: string } = {}) 
   const [reservations, setReservations] = useState([] as Reservation[])
   const [orders, setOrders] = useState([] as Order[])
   const [werkstattOrders, setWerkstattOrders] = useState([] as Order[])
+  const [archiveConfirmation, setArchiveConfirmation] = useState<{ type: "order" | "reservation" | "werkstatt"; id: number } | null>(null)
   const [reviews, setReviews] = useState([] as Review[])
   const [menuRatings, setMenuRatings] = useState([] as MenuItemRating[])
 
@@ -1530,11 +1532,17 @@ const editMembershipPlan = (plan: MembershipPlan) => {
     }
   }
 
-  const archiveOrderHandler = async (id: number) => {
-    if (confirm("Sind Sie sicher, dass Sie diese Bestellung archivieren möchten?")) {
+  const archiveOrderHandler = (id: number) => {
+    setArchiveConfirmation({ type: "order", id })
+  }
+
+  const confirmArchive = async () => {
+    if (!archiveConfirmation) return
+    const { type, id } = archiveConfirmation
+    setArchiveConfirmation(null)
+    if (type === "order") {
       await updateOrderStatusHandler(id, "Archiviert")
-      const updatedOrders = orders.map((order) => (order.id === id ? { ...order, status: "Archiviert" } : order))
-      setOrders(updatedOrders)
+      setOrders((current) => current.map((order) => (order.id === id ? { ...order, status: "Archiviert" } : order)))
     }
   }
 
@@ -6482,6 +6490,19 @@ const editMembershipPlan = (plan: MembershipPlan) => {
           </Card>
         </div>
       )}
+
+      <Dialog open={archiveConfirmation !== null} onOpenChange={(open) => !open && setArchiveConfirmation(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Bestellung archivieren</DialogTitle>
+            <DialogDescription>Sind Sie sicher, dass Sie diese Bestellung archivieren möchten?</DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setArchiveConfirmation(null)}>Abbrechen</Button>
+            <Button variant="destructive" onClick={confirmArchive}>OK</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
