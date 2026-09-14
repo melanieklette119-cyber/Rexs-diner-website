@@ -62,7 +62,7 @@ export async function POST(request: Request) {
     }
     const [{ data: recipient }, { data: plan }] = await Promise.all([
       supabase.from("user_profiles").select("id, discord_id, discord_username, full_name").eq("id", userId).single(),
-      supabase.from("membership_plans").select("id, name").eq("id", planId).eq("active", true).single(),
+      supabase.from("membership_plans").select("id, name").eq("id", planId).single(),
     ])
     if (!recipient?.discord_id || !plan) return NextResponse.json({ error: "Empfänger oder Mitgliedschaft nicht gefunden." }, { status: 404 })
     const token = randomBytes(32).toString("hex")
