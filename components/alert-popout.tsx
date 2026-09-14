@@ -9,12 +9,18 @@ export function AlertPopout() {
 
   useEffect(() => {
     const originalAlert = window.alert
+    const originalConfirm = window.confirm
     window.alert = (nextMessage?: unknown) => {
       setMessage(String(nextMessage ?? ""))
+    }
+    window.confirm = (nextMessage?: string) => {
+      setMessage(String(nextMessage ?? ""))
+      return true
     }
 
     return () => {
       window.alert = originalAlert
+      window.confirm = originalConfirm
     }
   }, [])
 
