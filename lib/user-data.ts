@@ -1031,7 +1031,7 @@ export const saveCustomRanks = async (ranks: { [key: string]: CustomRank }): Pro
         name: rank.name,
         level: rank.level,
         permissions: rank.permissions,
-      })
+      }, { onConflict: "rank_key" })
 
     if (error) {
       console.error("Error saving rank:", error)
