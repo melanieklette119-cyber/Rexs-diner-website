@@ -22,6 +22,7 @@ export type UserProfile = {
   discord_username: string
   full_name: string
   phone: string
+  iban?: string
   avatar_url?: string
   created_at?: string
   updated_at?: string
@@ -179,6 +180,7 @@ export const saveUserProfile = async (profile: Omit<UserProfile, "id" | "created
       .update({
         full_name: profile.full_name,
         phone: profile.phone,
+        iban: profile.iban?.trim() || null,
         discord_username: profile.discord_username,
         avatar_url: profile.avatar_url,
         updated_at: new Date().toISOString(),
@@ -200,6 +202,7 @@ export const saveUserProfile = async (profile: Omit<UserProfile, "id" | "created
         discord_id: profile.discord_id,
         full_name: profile.full_name,
         phone: profile.phone,
+        iban: profile.iban?.trim() || null,
         discord_username: profile.discord_username,
         avatar_url: profile.avatar_url,
       })

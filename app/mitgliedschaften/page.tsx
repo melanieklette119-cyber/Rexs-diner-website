@@ -9,6 +9,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Badge } from "@/components/ui/badge"
 import { CheckCircle, LogIn } from "lucide-react"
 import { getDiscordSession } from "@/lib/discord-session"
+import { getUserProfile } from "@/lib/user-data"
 
 type Plan = { id: string; name: string; description: string; price: number; billing_interval: string; min_duration_months: number; cancellation_notice_months: number; newcomer_only: boolean; includes_discount: boolean; discount_percent: number | null }
 
@@ -24,13 +25,16 @@ export default function MitgliedschaftenPage() {
     useEffect(() => {
       const session = getDiscordSession()
       setDiscordUser(session)
-      if (session) {
-        setForm((prev) => ({
-          ...prev,
-          discordId: session.id,
-          fullName: session.username || prev.fullName,
-        }))
-      }
+  if (session) {
+    setForm((prev) => ({
+      ...prev,
+      discordId: session.id,
+      fullName: session.username || prev.fullName,
+    }))
+    getUserProfile(session.id).then((profile) => {
+      if (profile?.iban) setForm((prev) => ({ ...prev, bankAccountId: profile.iban ?? "" }))
+    })
+  }
     }, [])
   useEffect(() => {
     fetch("/api/memberships?mine=true").catch(() => fetch("/api/memberships"))
