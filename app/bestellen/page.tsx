@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -67,6 +67,7 @@ export default function BestellenPage() {
   const [menuRatings, setMenuRatings] = useState<MenuItemRating[]>([])
   const [showMinimumOrderWarning, setShowMinimumOrderWarning] = useState(false)
   const [orderNotice, setOrderNotice] = useState<{ title: string; message: string; success: boolean } | null>(null)
+  const [menuDrinkChoice, setMenuDrinkChoice] = useState<MenuItem | null>(null)
 
   useEffect(() => {
     const loadData = async () => {
@@ -338,18 +339,27 @@ export default function BestellenPage() {
     setDiscountError("")
   }
 
-  const addToCart = (item: MenuItem) => {
+  const addCartItem = (item: MenuItem, price = Math.floor(Number.parseFloat(item.price || "0")).toString()) => {
     setCart((prevCart) => {
-      const existingItem = prevCart.find((cartItem) => cartItem.id === item.id)
-      if (existingItem) {
-        return prevCart.map((cartItem) =>
-          cartItem.id === item.id ? { ...cartItem, quantity: cartItem.quantity + 1 } : cartItem
-        )
-      } else {
-        const flooredPrice = Math.floor(Number.parseFloat(item.price || "0")).toString()
-        return [...prevCart, { id: item.id, name: item.name, price: flooredPrice, quantity: 1 }]
-      }
+      const existingItem = prevCart.find((cartItem) => cartItem.id === item.id && cartItem.price === price)
+      if (existingItem) return prevCart.map((cartItem) => cartItem.id === item.id && cartItem.price === price ? { ...cartItem, quantity: cartItem.quantity + 1 } : cartItem)
+      return [...prevCart, { id: item.id, name: item.name, price, quantity: 1 }]
     })
+  }
+
+  const addToCart = (item: MenuItem) => {
+    if (item.category?.toLowerCase().includes("menü") || item.category?.toLowerCase().includes("menu")) {
+      setMenuDrinkChoice(item)
+      return
+    }
+    addCartItem(item)
+  }
+
+  const addMenuWithDrink = (drink: MenuItem) => {
+    if (!menuDrinkChoice) return
+    addCartItem(menuDrinkChoice)
+    addCartItem(drink, "0")
+    setMenuDrinkChoice(null)
   }
 
   const removeFromCart = (id: number) => {
@@ -1156,8 +1166,34 @@ export default function BestellenPage() {
           </div>
         )}
 
-        {showSaveProfileDialog && (
-          <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+          {menuDrinkChoice && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
+              <Card className="w-full max-w-md bg-card">
+                <CardHeader>
+                  <CardTitle>Gratis Getränk auswählen</CardTitle>
+                  <CardDescription>Wähle ein Getränk zu deinem Menü. Es kostet dich 0 €.</CardDescription>
+                </CardHeader>
+                <CardContent className="flex flex-col gap-2">
+                  {menuItems.filter((drink) => {
+                    const category = drink.category?.toLowerCase() || ""
+                    return category.includes("getränk") || category.includes("getraenk") || category.includes("drink")
+                  }).map((drink) => (
+                    <Button key={drink.id} variant="outline" className="justify-between" onClick={() => addMenuWithDrink(drink)}>
+                      <span>{drink.name}</span><span>0 €</span>
+                    </Button>
+                  ))}
+                  {menuItems.filter((drink) => {
+                    const category = drink.category?.toLowerCase() || ""
+                    return category.includes("getränk") || category.includes("getraenk") || category.includes("drink")
+                  }).length === 0 && <p className="text-sm text-muted-foreground">Keine Getränke verfügbar.</p>}
+                </CardContent>
+                <CardFooter className="justify-end"><Button variant="ghost" onClick={() => setMenuDrinkChoice(null)}>Abbrechen</Button></CardFooter>
+              </Card>
+            </div>
+          )}
+
+          {showSaveProfileDialog && (
+            <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
             <Card className="w-full max-w-md bg-card border-border">
               <CardHeader>
                 <CardTitle className="text-card-foreground">Profil aktualisieren?</CardTitle>
