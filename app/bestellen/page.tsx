@@ -17,6 +17,7 @@ type CartItem = {
   name: string
   price: string
   quantity: number
+  menuGroupId?: string
 }
 
 type Address = {
@@ -339,11 +340,11 @@ export default function BestellenPage() {
     setDiscountError("")
   }
 
-  const addCartItem = (item: MenuItem, price = Math.floor(Number.parseFloat(item.price || "0")).toString()) => {
+  const addCartItem = (item: MenuItem, price = Math.floor(Number.parseFloat(item.price || "0")).toString(), menuGroupId?: string) => {
     setCart((prevCart) => {
-      const existingItem = prevCart.find((cartItem) => cartItem.id === item.id && cartItem.price === price)
-      if (existingItem) return prevCart.map((cartItem) => cartItem.id === item.id && cartItem.price === price ? { ...cartItem, quantity: cartItem.quantity + 1 } : cartItem)
-      return [...prevCart, { id: item.id, name: item.name, price, quantity: 1 }]
+      const existingItem = prevCart.find((cartItem) => cartItem.id === item.id && cartItem.price === price && cartItem.menuGroupId === menuGroupId)
+      if (existingItem) return prevCart.map((cartItem) => cartItem.id === item.id && cartItem.price === price && cartItem.menuGroupId === menuGroupId ? { ...cartItem, quantity: cartItem.quantity + 1 } : cartItem)
+      return [...prevCart, { id: item.id, name: item.name, price, quantity: 1, menuGroupId }]
     })
   }
 
@@ -357,14 +358,18 @@ export default function BestellenPage() {
 
   const addMenuWithDrink = (drink: MenuItem) => {
     if (!menuDrinkChoice) return
-    addCartItem(menuDrinkChoice)
-    addCartItem(drink, "0")
+    const menuGroupId = `menu-${menuDrinkChoice.id}-${Date.now()}`
+    addCartItem(menuDrinkChoice, undefined, menuGroupId)
+    addCartItem(drink, "0", menuGroupId)
     setMenuDrinkChoice(null)
   }
 
   const removeFromCart = (id: number) => {
     setCart((prevCart) => {
       const existingItem = prevCart.find((cartItem) => cartItem.id === id)
+      const groupToRemove = existingItem?.menuGroupId
+      if (groupToRemove) return prevCart.filter((cartItem) => cartItem.menuGroupId !== groupToRemove)
+
       if (existingItem && existingItem.quantity > 1) {
         return prevCart.map((cartItem) =>
           cartItem.id === id ? { ...cartItem, quantity: cartItem.quantity - 1 } : cartItem
