@@ -19,7 +19,8 @@ import {
   setUserSession,
   updateUser,
   DEFAULT_RANKS,
-  getAllRanks
+  getAllRanks,
+  getDienstvorschriften
 } from "@/lib/user-data"
 import { getDiscordSession } from "@/lib/discord-session"
 
@@ -31,6 +32,7 @@ export default function LoginPage() {
   const [showPasswordChange, setShowPasswordChange] = useState(false)
   const [showDienstvorschriften, setShowDienstvorschriften] = useState(false)
   const [dienstvorschriftenChecked, setDienstvorschriftenChecked] = useState(false)
+  const [dienstvorschriftenText, setDienstvorschriftenText] = useState("")
   const [newPassword, setNewPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
   const [currentUser, setCurrentUser] = useState<User | null>(null)
@@ -148,6 +150,10 @@ export default function LoginPage() {
 
     setIsLoading(false)
   }
+
+  useEffect(() => {
+    getDienstvorschriften().then(setDienstvorschriftenText)
+  }, [])
 
   const handleAcceptDienstvorschriften = async () => {
     if (!currentUser || !dienstvorschriftenChecked) return
@@ -276,24 +282,8 @@ export default function LoginPage() {
               </p>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="bg-muted/50 rounded-lg p-4 max-h-64 overflow-y-auto text-sm text-muted-foreground space-y-3 border border-border">
-                <h3 className="font-semibold text-foreground">1. Professionelles Verhalten</h3>
-                <p>Respektvoller und hoeflicher Umgang mit Gaesten und Kollegen. Puenktlichkeit ist zwingend erforderlich (mindestens 15 Minuten vor Schichtbeginn). Diskretion und Vertraulichkeit bei sensiblen Informationen.</p>
-
-                <h3 className="font-semibold text-foreground">2. Uniform und Erscheinung</h3>
-                <p>Uniform muss sauber und in gutem Zustand sein. Geschlossene, rutschfeste Schuhe sind Pflicht. Haare muessen gebunden oder kurz sein. Nametag muss waehrend der gesamten Schicht getragen werden.</p>
-
-                <h3 className="font-semibold text-foreground">3. Hygiene und Gesundheit</h3>
-                <p>Regelmaessiges Haendewaschen vor und nach jeder Taetigkeit. Im Falle von Krankheit (besonders Magen-Darm) Dienst nicht antreten. Wunden und Schnitte muessen abgedeckt sein.</p>
-
-                <h3 className="font-semibold text-foreground">4. Service-Standards</h3>
-                <p>Gaeste werden innerhalb von 2 Minuten nach dem Sitzen begruesst. Auf Beschwerden ruhig und professionell reagieren. Bestellungen werden mindestens zu zweit wiederholt zur Kontrolle.</p>
-
-                <h3 className="font-semibold text-foreground">5. Arbeitszeitregelungen</h3>
-                <p>Krankheitsmeldung spaetestens 2 Stunden vor Schichtbeginn. Aerztliches Attest ab 3. Fehltag erforderlich. Unentschuldigtes Fehlen hat ernsthafte Konsequenzen.</p>
-
-                <h3 className="font-semibold text-foreground">6. Nutzung des Admin-Panels</h3>
-                <p>Das Admin-Panel darf nur fuer dienstliche Zwecke verwendet werden. Missbrauch von Berechtigungen fuehrt zu Konsequenzen.</p>
+              <div className="bg-muted/50 rounded-lg p-4 max-h-64 overflow-y-auto whitespace-pre-wrap text-sm text-muted-foreground border border-border">
+                {dienstvorschriftenText || "Dienstvorschriften werden geladen..."}
               </div>
 
               <div className="flex items-start gap-3">

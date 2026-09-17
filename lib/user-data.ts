@@ -1045,6 +1045,40 @@ export const saveCustomRanks = async (ranks: { [key: string]: CustomRank }): Pro
   return true
 }
 
+export const DEFAULT_DIENSTVORSCHRIFTEN = `1. Professionelles Verhalten
+Respektvoller und höflicher Umgang mit Gästen und Kollegen. Pünktlichkeit ist zwingend erforderlich (mindestens 15 Minuten vor Schichtbeginn). Diskretion und Vertraulichkeit bei sensiblen Informationen.
+
+2. Uniform und Erscheinung
+Uniform muss sauber und in gutem Zustand sein. Geschlossene, rutschfeste Schuhe sind Pflicht. Haare müssen gebunden oder kurz sein. Nametag muss während der gesamten Schicht getragen werden.
+
+3. Hygiene und Gesundheit
+Regelmäßiges Händewaschen vor und nach jeder Tätigkeit. Im Falle von Krankheit (besonders Magen-Darm) Dienst nicht antreten. Wunden und Schnitte müssen abgedeckt sein.
+
+4. Service-Standards
+Gäste werden innerhalb von 2 Minuten nach dem Sitzen begrüßt. Auf Beschwerden ruhig und professionell reagieren. Bestellungen werden mindestens zu zweit wiederholt zur Kontrolle.
+
+5. Arbeitszeitregelungen
+Krankheitsmeldung spätestens 2 Stunden vor Schichtbeginn. Ärztliches Attest ab 3. Fehltag erforderlich. Unentschuldigtes Fehlen hat ernsthafte Konsequenzen.
+
+6. Nutzung des Admin-Panels
+Das Admin-Panel darf nur für dienstliche Zwecke verwendet werden. Missbrauch von Berechtigungen führt zu Konsequenzen.`
+
+export const getDienstvorschriften = async (): Promise<string> => {
+  const supabase = createClient()
+  if (!supabase) return DEFAULT_DIENSTVORSCHRIFTEN
+  const { data, error } = await supabase.from("dienstvorschriften").select("content").eq("id", 1).maybeSingle()
+  if (error || !data?.content) return DEFAULT_DIENSTVORSCHRIFTEN
+  return data.content
+}
+
+export const saveDienstvorschriften = async (content: string): Promise<boolean> => {
+  const supabase = createClient()
+  if (!supabase) return false
+  const { error } = await supabase.from("dienstvorschriften").upsert({ id: 1, content, updated_at: new Date().toISOString() }, { onConflict: "id" })
+  if (error) { console.error("Error saving Dienstvorschriften:", error); return false }
+  return true
+}
+
 // Menu Item Ratings - Essen Bewertungen
 export type MenuItemRating = {
   id?: number

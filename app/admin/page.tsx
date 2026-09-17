@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react"
 import { useRouter, usePathname } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -57,6 +57,9 @@ import {
   getCustomRanks,
   saveCustomRank,
   saveCustomRanks,
+  getDienstvorschriften,
+  saveDienstvorschriften,
+  DEFAULT_DIENSTVORSCHRIFTEN,
   deleteCustomRank as deleteRankFromDB,
   DEFAULT_RANKS,
   getWebsiteConfig,
@@ -127,6 +130,7 @@ const formatPermissions = (permissions: string[]) => {
       case "rabattcodes": return "Rabattcode-Management"
       case "rabattcodes_or_view": return "Rabattcodes einsehen"
       case "memberships_manage": return "Mitgliedschaften verwalten"
+      case "dienstvorschriften": return "Dienstvorschriften bearbeiten"
       case "kalender_or_view": return "Kalender ansehen und verwalten"
       case "werkstatt": return "Werkstattbuchungen"
       case "archive": return "Archivverwaltung"
@@ -232,6 +236,7 @@ const RankCard = ({
                   { key: "users_limited", label: "Mitarbeiterverwaltung (eingeschränkt)" },
                   { key: "users", label: "Vollständige Mitarbeiterverwaltung" },
                   { key: "memberships_manage", label: "Mitgliedschaften verwalten" },
+                  { key: "dienstvorschriften", label: "Dienstvorschriften bearbeiten" },
                 ].map((permission) => (
                   <label key={permission.key} className="flex items-center space-x-2">
                     <input
@@ -410,6 +415,8 @@ export default function AdminPage({ initialTab }: { initialTab?: string } = {}) 
     d.setDate(d.getDate() + 1)
     return d.toISOString().slice(0, 10)
   })
+  const [dienstvorschriftenText, setDienstvorschriftenText] = useState(DEFAULT_DIENSTVORSCHRIFTEN)
+  const [dienstvorschriftenSaving, setDienstvorschriftenSaving] = useState(false)
   const [websiteConfig, setWebsiteConfig] = useState({
     discordChannels: {
       reservations: "1381651223140241438",
@@ -1381,6 +1388,9 @@ const editMembershipPlan = (plan: MembershipPlan) => {
     }
     if (activeTab === "mitgliedschaften") {
       loadMembershipPlans()
+    }
+    if (activeTab === "dienstvorschriften") {
+      getDienstvorschriften().then(setDienstvorschriftenText)
     }
   }, [activeTab, userGroup, customRanks])
 
@@ -5903,11 +5913,21 @@ const editMembershipPlan = (plan: MembershipPlan) => {
               </div>
             )}
 
-            {activeTab === "dienstvorschriften" && (
+            {activeTab === "dienstvorschriften" && hasPermission("dienstvorschriften") && (
               <div className="space-y-6">
                 <div className="mb-6">
                   <h2 className="text-2xl font-bold text-foreground mb-4">Dienstvorschriften</h2>
+                  <p className="text-muted-foreground">Bearbeite hier die Vorschriften. Nutzer mit der Berechtigung „Dienstvorschriften“ sowie Administratoren können Änderungen speichern.</p>
                 </div>
+                <Card>
+                  <CardHeader><CardTitle>Vorschriften bearbeiten</CardTitle></CardHeader>
+                  <CardContent>
+                    <Textarea value={dienstvorschriftenText} onChange={(event) => setDienstvorschriftenText(event.target.value)} rows={18} className="font-mono text-sm" />
+                  </CardContent>
+                  <CardFooter className="justify-end">
+                    <Button disabled={dienstvorschriftenSaving} onClick={async () => { setDienstvorschriftenSaving(true); const saved = await saveDienstvorschriften(dienstvorschriftenText); setDienstvorschriftenSaving(false); alert(saved ? "Dienstvorschriften gespeichert." : "Speichern fehlgeschlagen.") }}>{dienstvorschriftenSaving ? "Speichert..." : "Dienstvorschriften speichern"}</Button>
+                  </CardFooter>
+                </Card>
 
                 {/* Allgemeine Verhaltensregeln */}
                 <Card>
@@ -6237,7 +6257,9 @@ const editMembershipPlan = (plan: MembershipPlan) => {
                 </div>
 
                 <div className="grid gap-4">
-                  {Object.entries(getAllRanks()).map(([key, rank]) => (
+                  {Object.entries(getAllRanks())
+                    .sort(([, firstRank], [, secondRank]) => firstRank.level - secondRank.level)
+                    .map(([key, rank]) => (
                     <RankCard
                       key={key}
                       rankKey={key}
@@ -6255,7 +6277,7 @@ const editMembershipPlan = (plan: MembershipPlan) => {
                         })
                       }}
                     />
-                  ))}
+                    ))}
                 </div>
               </div>
             )}
