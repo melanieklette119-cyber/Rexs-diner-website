@@ -6257,7 +6257,9 @@ const editMembershipPlan = (plan: MembershipPlan) => {
                 </div>
 
                 <div className="grid gap-4">
-                  {Object.entries(getAllRanks()).map(([key, rank]) => (
+                  {Object.entries(getAllRanks())
+                    .sort(([, firstRank], [, secondRank]) => firstRank.level - secondRank.level)
+                    .map(([key, rank]) => (
                     <RankCard
                       key={key}
                       rankKey={key}
@@ -6275,7 +6277,7 @@ const editMembershipPlan = (plan: MembershipPlan) => {
                         })
                       }}
                     />
-                  ))}
+                    ))}
                 </div>
               </div>
             )}
