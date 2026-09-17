@@ -23,6 +23,7 @@ export default function ProfilePage() {
     discord_username: "",
     full_name: "",
     phone: "",
+    iban: "",
   })
   const [isLoading, setIsLoading] = useState(false)
   const [success, setSuccess] = useState(false)
@@ -115,7 +116,7 @@ export default function ProfilePage() {
   }
 
   const isModified =
-    profile.full_name !== originalProfile?.full_name || profile.phone !== originalProfile?.phone
+    profile.full_name !== originalProfile?.full_name || profile.phone !== originalProfile?.phone || profile.iban !== originalProfile?.iban
 
   return (
     <main className="min-h-screen bg-background py-12 px-4">
@@ -197,8 +198,20 @@ export default function ProfilePage() {
                   placeholder="Z.B. +49 123 456789"
                   value={profile.phone}
                   onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
-                  className="bg-background border-border"
                 />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="iban" className="text-base font-medium">IBAN / FiveM-Bankkonto-ID</Label>
+                <Input
+                  id="iban"
+                  type="text"
+                  inputMode="numeric"
+                  placeholder="Deine IBAN oder Bankkonto-ID"
+                  value={profile.iban ?? ""}
+                  onChange={(e) => setProfile({ ...profile, iban: e.target.value })}
+                />
+                <p className="text-sm text-muted-foreground">Diese Angabe wird beim Abschluss einer Mitgliedschaft automatisch übernommen.</p>
                 <p className="text-xs text-muted-foreground">
                   Wird automatisch bei Bestellungen und Reservierungen verwendet
                 </p>
