@@ -260,12 +260,12 @@ export const saveCustomRank = async (key: string, rank: CustomRank): Promise<boo
   if (!supabase) return false
   const { error } = await supabase
     .from("ranks")
-    .upsert({
-      rank_key: key,
-      name: rank.name,
-      level: rank.level,
-      permissions: rank.permissions,
-    })
+  .upsert({
+    rank_key: key,
+    name: rank.name,
+    level: rank.level,
+    permissions: rank.permissions,
+  }, { onConflict: "rank_key" })
 
   if (error) {
     console.error("Error saving rank:", error)
