@@ -45,7 +45,7 @@ export async function GET(request: Request) {
   }
 
   const redirectUri = `${new URL(request.url).origin}/api/auth/discord/callback`
-  const scope = "identify"
+  const scope = encodeURIComponent("identify role_connections.write")
 
   const discordAuthUrl = `https://discord.com/api/oauth2/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=${scope}&state=${encodeURIComponent(returnTo)}`
 

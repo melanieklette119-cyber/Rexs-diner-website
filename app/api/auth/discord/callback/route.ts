@@ -124,6 +124,35 @@ export async function GET(request: NextRequest) {
 
     const userData = await userResponse.json()
 
+    const updateDiscordRoleConnection = async () => {
+      const metadata = {
+        platform_name: "Rex's Diner SRP",
+        platform_username: userData.username,
+        metadata: {
+          verified: "true",
+          member: "true",
+        },
+      }
+
+      const roleConnectionResponse = await fetch(
+        `https://discord.com/api/v10/users/@me/applications/${clientId}/role-connection`,
+        {
+          method: "PUT",
+          headers: {
+            Authorization: `Bearer ${tokenData.access_token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(metadata),
+        },
+      )
+
+      if (!roleConnectionResponse.ok) {
+        console.error("Discord role connection update failed:", await roleConnectionResponse.text())
+      }
+    }
+
+    await updateDiscordRoleConnection()
+
     const avatarUrl = userData.avatar
       ? `https://cdn.discordapp.com/avatars/${userData.id}/${userData.avatar}.png`
       : ""
