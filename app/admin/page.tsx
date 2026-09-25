@@ -2566,10 +2566,11 @@ const editMembershipPlan = (plan: MembershipPlan) => {
   useEffect(() => {
     const loadData = async () => {
       const loggedIn = localStorage.getItem("isLoggedIn")
-      const userRole = localStorage.getItem("userRole")
+      const userRole = (localStorage.getItem("userRole") || "").trim().toLowerCase()
       const group = localStorage.getItem("userGroup") || "mitarbeiter"
+      const isAdminRole = userRole === "admin" || userRole === "administrator" || userRole === "owner"
 
-      if (loggedIn === "true" && userRole === "admin") {
+      if (loggedIn === "true" && isAdminRole) {
         setIsAuthenticated(true)
   setUserGroup(String(group ?? "").toLowerCase())
 
