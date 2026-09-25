@@ -75,7 +75,28 @@ async function getDiscordConfig(): Promise<{
 }
 
 // Create or update Discord roles from the website rank definitions
-async function syncRankRolesToDiscord(ranks: Record<string, { name: string; level: number }>) {
+const DISCORD_PERMISSION_BITS: Record<string, bigint> = {
+  admin: BigInt("8"),
+  administrator: BigInt("8"),
+  manage_guild: BigInt("32"),
+  manage_roles: BigInt("268435456"),
+  manage_channels: BigInt("16"),
+  manage_messages: BigInt("8192"),
+  kick_members: BigInt("2"),
+  ban_members: BigInt("4"),
+  moderate_members: BigInt("1099511627776"),
+}
+
+function getDiscordPermissions(permissions: string[] = []) {
+  return permissions.reduce(
+    (bits, permission) => bits | (DISCORD_PERMISSION_BITS[permission] || BigInt("0")),
+    BigInt("0"),
+  ).toString()
+}
+
+async function syncRankRolesToDiscord(
+  ranks: Record<string, { name: string; level: number; permissions?: string[] }>,
+) {
   const config = await getDiscordConfig()
   if (!config.token || !config.guildId) {
     return { ok: false, error: "Discord Bot-Konfiguration oder Guild-ID fehlt." }
@@ -92,9 +113,15 @@ async function syncRankRolesToDiscord(ranks: Record<string, { name: string; leve
   const existingRoles = (await existingResponse.json()) as Array<{ id: string; name: string }>
   const results = []
 
-  for (const rank of Object.values(ranks).sort((a, b) => a.level - b.level)) {
+  const sortedRanks = Object.values(ranks).sort((a, b) => a.level - b.level)
+  for (const [index, rank] of sortedRanks.entries()) {
     const existingRole = existingRoles.find((role) => role.name === rank.name)
-    const payload = { name: rank.name, hoist: false, mentionable: true }
+    const payload = {
+      name: rank.name,
+      permissions: getDiscordPermissions(rank.permissions),
+      hoist: true,
+      mentionable: true,
+    }
     const response = await fetch(
       existingRole
         ? `${DISCORD_API}/guilds/${config.guildId}/roles/${existingRole.id}`
@@ -108,6 +135,16 @@ async function syncRankRolesToDiscord(ranks: Record<string, { name: string; leve
 
     if (!response.ok) {
       return { ok: false, error: `Rolle „${rank.name}“ konnte nicht erstellt werden (${response.status}).` }
+    }
+
+    const savedRole = (await response.json()) as { id: string }
+    const positionResponse = await fetch(`${DISCORD_API}/guilds/${config.guildId}/roles`, {
+      method: "PATCH",
+      headers: { Authorization: `Bot ${config.token}`, "Content-Type": "application/json" },
+      body: JSON.stringify([{ id: savedRole.id, position: sortedRanks.length - index + 1 }]),
+    })
+    if (!positionResponse.ok) {
+      return { ok: false, error: `Position der Rolle „${rank.name}“ konnte nicht gesetzt werden.` }
     }
     results.push(existingRole ? "aktualisiert" : "erstellt")
   }
