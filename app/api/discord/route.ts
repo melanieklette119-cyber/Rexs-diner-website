@@ -74,6 +74,47 @@ async function getDiscordConfig(): Promise<{
   }
 }
 
+// Create or update Discord roles from the website rank definitions
+async function syncRankRolesToDiscord(ranks: Record<string, { name: string; level: number }>) {
+  const config = await getDiscordConfig()
+  if (!config.token || !config.guildId) {
+    return { ok: false, error: "Discord Bot-Konfiguration oder Guild-ID fehlt." }
+  }
+
+  const existingResponse = await fetch(`${DISCORD_API}/guilds/${config.guildId}/roles`, {
+    headers: { Authorization: `Bot ${config.token}` },
+    cache: "no-store",
+  })
+  if (!existingResponse.ok) {
+    return { ok: false, error: `Discord Rollen konnten nicht geladen werden (${existingResponse.status}).` }
+  }
+
+  const existingRoles = (await existingResponse.json()) as Array<{ id: string; name: string }>
+  const results = []
+
+  for (const rank of Object.values(ranks).sort((a, b) => a.level - b.level)) {
+    const existingRole = existingRoles.find((role) => role.name === rank.name)
+    const payload = { name: rank.name, hoist: false, mentionable: true }
+    const response = await fetch(
+      existingRole
+        ? `${DISCORD_API}/guilds/${config.guildId}/roles/${existingRole.id}`
+        : `${DISCORD_API}/guilds/${config.guildId}/roles`,
+      {
+        method: existingRole ? "PATCH" : "POST",
+        headers: { Authorization: `Bot ${config.token}`, "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      },
+    )
+
+    if (!response.ok) {
+      return { ok: false, error: `Rolle „${rank.name}“ konnte nicht erstellt werden (${response.status}).` }
+    }
+    results.push(existingRole ? "aktualisiert" : "erstellt")
+  }
+
+  return { ok: true, count: results.length }
+}
+
 // Send message to Discord channel
 async function sendToDiscordChannel(channelId: string, content: string, embedsOrToken?: any[] | string, token?: string) {
   const embeds = Array.isArray(embedsOrToken) ? embedsOrToken : []
@@ -276,8 +317,14 @@ export async function POST(request: NextRequest) {
 
     console.log(`[Discord] Processing ${type} for guild ${GUILD_ID}`)
 
-    switch (type) {
-      case "new_reservation":
+  switch (type) {
+  case "sync_rank_roles": {
+    const result = await syncRankRolesToDiscord(data?.ranks || {})
+    if (!result.ok) return NextResponse.json({ error: result.error }, { status: 500 })
+    return NextResponse.json({ success: true, count: result.count })
+  }
+
+  case "new_reservation":
         await sendToDiscordChannel(
           discordConfig.channels.reservations, // Reservierungen bleiben im ursprünglichen Channel
           "||<@&1466554753671630949>|| 🍽️ | **Neue Reservierung bei Rex Diner!**",
