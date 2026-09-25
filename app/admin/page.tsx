@@ -1806,6 +1806,21 @@ const editMembershipPlan = (plan: MembershipPlan) => {
     }
   }
 
+  const syncRankRolesToDiscord = async () => {
+    try {
+      const response = await fetch("/api/discord", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type: "sync_rank_roles", data: { ranks: { ...DEFAULT_RANKS, ...customRanks } } }),
+      })
+      const result = await response.json()
+      if (!response.ok) throw new Error(result.error || "Unbekannter Discord-Fehler")
+      alert(`${result.count} Discord-Rollen wurden erstellt oder aktualisiert.`)
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "Discord-Rollen konnten nicht synchronisiert werden.")
+    }
+  }
+
   const exportRanks = () => {
     const allRanks = { ...DEFAULT_RANKS, ...customRanks }
     const dataStr = JSON.stringify(allRanks, null, 2)
@@ -2566,10 +2581,11 @@ const editMembershipPlan = (plan: MembershipPlan) => {
   useEffect(() => {
     const loadData = async () => {
       const loggedIn = localStorage.getItem("isLoggedIn")
-      const userRole = localStorage.getItem("userRole")
+      const userRole = (localStorage.getItem("userRole") || "").trim().toLowerCase()
       const group = localStorage.getItem("userGroup") || "mitarbeiter"
+      const isAdminRole = userRole === "admin" || userRole === "administrator" || userRole === "owner"
 
-      if (loggedIn === "true" && userRole === "admin") {
+      if (loggedIn === "true" && isAdminRole) {
         setIsAuthenticated(true)
   setUserGroup(String(group ?? "").toLowerCase())
 
@@ -6171,12 +6187,15 @@ const editMembershipPlan = (plan: MembershipPlan) => {
                     </CardContent>
                   </Card>
 
-                  <div className="mb-6">
+                  <div className="mb-6 flex flex-wrap gap-3">
                     <Button
                       onClick={() => setShowCreateRankForm(!showCreateRankForm)}
                       className="bg-primary hover:bg-primary/80 text-white"
                     >
                       {showCreateRankForm ? "Abbrechen" : "Neuen Dienstgrad Erstellen"}
+                    </Button>
+                    <Button onClick={syncRankRolesToDiscord} variant="outline">
+                      Discord-Rollen synchronisieren
                     </Button>
                   </div>
 
