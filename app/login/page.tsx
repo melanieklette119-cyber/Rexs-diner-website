@@ -3,7 +3,7 @@
 import type React from "react"
 
 import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -40,6 +40,21 @@ export default function LoginPage() {
   const [selectedUser, setSelectedUser] = useState<User | null>(null)
   const [allRanks, setAllRanks] = useState<{ [key: string]: any }>(DEFAULT_RANKS)
   const router = useRouter()
+  const searchParams = useSearchParams()
+
+  const oauthError = searchParams.get("error")
+
+  useEffect(() => {
+    if (!oauthError) return
+    const messages: Record<string, string> = {
+      no_code: "Discord hat keine Anmeldung bestätigt. Prüfe die OAuth2-Redirect-URL und versuche es erneut.",
+      discord_denied: "Die Discord-Anmeldung wurde abgebrochen. Du kannst es jederzeit erneut versuchen.",
+      token_failed: "Discord konnte die Anmeldung nicht abschließen. Prüfe die Redirect-URL im Developer Portal.",
+      not_configured: "Discord ist auf der Website noch nicht vollständig eingerichtet.",
+      server_error: "Die Discord-Anmeldung ist fehlgeschlagen. Bitte versuche es später erneut.",
+    }
+    setError(messages[oauthError] || "Die Anmeldung ist fehlgeschlagen.")
+  }, [searchParams])
 
   // Discord OAuth Callback aus Cookies verarbeiten
   useEffect(() => {
@@ -378,8 +393,19 @@ export default function LoginPage() {
     <div className="min-h-screen bg-background flex items-center justify-center px-4">
       <div className="w-full max-w-md space-y-4">
         <Card className="shadow-lg bg-card border-border">
-          <CardHeader className="text-center">
-            <CardTitle className="text-2xl font-bold text-card-foreground flex items-center justify-center gap-2">
+                <CardHeader className="text-center">
+                  {oauthError && (
+                    <div className="mb-4 rounded-lg border border-destructive/30 bg-destructive/10 p-4 text-left">
+                      <div className="flex items-center gap-2 font-semibold text-destructive">
+                        <AlertCircle className="h-5 w-5" /> Discord-Anmeldung fehlgeschlagen
+                      </div>
+                      <p className="mt-2 text-sm text-muted-foreground">{error}</p>
+                      <p className="mt-2 text-xs text-muted-foreground">Prüfe im Discord Developer Portal unter OAuth2 → Redirects diese URL:</p>
+                      <code className="mt-1 block break-all rounded bg-background/70 p-2 text-xs">https://rexs-diner-srp.vercel.app/api/auth/discord/callback</code>
+                      <p className="mt-2 text-xs text-muted-foreground">Dein Website-Account bleibt erhalten. Melde dich nach der Korrektur erneut mit Discord an.</p>
+                    </div>
+                  )}
+                  <CardTitle className="text-2xl font-bold text-card-foreground flex items-center justify-center gap-2">
               <LogIn className="h-6 w-6 text-primary" />
               Mitarbeiter Login
             </CardTitle>

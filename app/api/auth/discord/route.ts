@@ -44,7 +44,11 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Discord Client ID nicht konfiguriert. Bitte in der Admin-Seite unter Discord Bot eintragen." }, { status: 500 })
   }
 
-  const redirectUri = `${new URL(request.url).origin}/api/auth/discord/callback`
+  const requestUrl = new URL(request.url)
+  const configuredOrigin = process.env.VERCEL_PROJECT_PRODUCTION_URL
+    ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+    : requestUrl.origin
+  const redirectUri = `${configuredOrigin}/api/auth/discord/callback`
   const scope = encodeURIComponent("identify role_connections.write")
 
   const discordAuthUrl = `https://discord.com/api/oauth2/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=${scope}&state=${encodeURIComponent(returnTo)}`
