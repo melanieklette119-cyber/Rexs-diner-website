@@ -91,7 +91,7 @@ client.once('ready', async () => {
 client.on('interactionCreate', async (interaction) => {
   // Handle slash command
   if (interaction.isCommand() && interaction.commandName === 'register') {
-    const logoUrlTopRight = 'https://media.galaxybot.app/server/1466553950122672170/be847469-8a07-4102-ae6a-f55bf13679aa.png'; // Replace with your top-right logo URL
+    const logoUrlTopRight = 'https://rexs-diner-srp.vercel.app/images/rex-dinner-logo.png'; // Replace with your top-right logo URL
     const logoUrlBottom = 'https://media.galaxybot.app/server/1466553950122672170/893ac245-7e8d-4a2d-9ed2-c60431e49a11.png'; // Replace with your bottom logo URL
 
     const rulesEmbed = new EmbedBuilder()
