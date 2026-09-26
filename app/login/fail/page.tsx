@@ -12,6 +12,7 @@ export default function LoginFailPage() {
   const reason = searchParams.get("reason") || "unknown"
   const discordId = searchParams.get("discordId")
   const discordName = searchParams.get("discordName")
+  const hasDiscordData = Boolean(discordId || discordName)
 
   const details = useMemo(() => {
     if (reason === "no_account") {
@@ -68,23 +69,32 @@ export default function LoginFailPage() {
             <h1 className="text-2xl font-bold tracking-tight text-card-foreground sm:text-3xl">{details.title}</h1>
             <p className="mt-3 text-sm leading-6 text-muted-foreground">{details.description}</p>
 
-            <div className="mt-6 rounded-lg border border-primary/25 bg-primary/5 p-4">
+            <div className="mt-6 grid gap-3 sm:grid-cols-2">
+              <div className="rounded-lg border border-destructive/25 bg-destructive/5 p-4">
+                <p className="text-xs font-medium uppercase tracking-wide text-destructive">Website-Account</p>
+                <p className="mt-2 font-semibold text-card-foreground">Kein Account gefunden</p>
+                <p className="mt-1 text-sm leading-5 text-muted-foreground">{details.hint}</p>
+              </div>
+              <div className="rounded-lg border border-primary/25 bg-primary/5 p-4">
+                <p className="text-xs font-medium uppercase tracking-wide text-primary">Discord-Konto</p>
+                <p className="mt-2 font-semibold text-card-foreground">{hasDiscordData ? "Verbindung erkannt" : "Keine Daten erhalten"}</p>
+                <p className="mt-1 text-sm leading-5 text-muted-foreground">
+                  {hasDiscordData ? "Die Discord-Daten wurden empfangen, aber keinem Website-Account zugeordnet." : "Discord hat keine Kontodaten an die Website übermittelt. Starte die Verbindung erneut."}
+                </p>
+                {discordName && <p className="mt-2 break-all text-xs text-muted-foreground">Name: {discordName}</p>}
+                {discordId && <p className="mt-1 break-all text-xs text-muted-foreground">ID: {discordId}</p>}
+              </div>
+            </div>
+
+            <div className="mt-4 rounded-lg border border-border bg-muted/50 p-4">
               <div className="flex gap-3">
                 <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
                 <div>
                   <p className="font-semibold text-card-foreground">Was bedeutet das?</p>
-                  <p className="mt-1 text-sm leading-6 text-muted-foreground">{details.hint}</p>
+                  <p className="mt-1 text-sm leading-6 text-muted-foreground">{details.description}</p>
                 </div>
               </div>
             </div>
-
-            {(discordId || discordName) && (
-              <div className="mt-4 rounded-lg border border-border bg-muted/50 p-4 text-sm text-muted-foreground">
-                <p className="font-semibold text-card-foreground">Discord-Verbindung</p>
-                {discordName && <p className="mt-1">Name: {discordName}</p>}
-                {discordId && <p className="mt-1 break-all">Discord-ID: {discordId}</p>}
-              </div>
-            )}
 
             <div className="mt-7 grid gap-3">
               <Button className="h-11 w-full bg-primary text-primary-foreground hover:bg-primary/80" onClick={() => router.replace("/login")}>
