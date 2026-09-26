@@ -99,10 +99,10 @@ export default function LoginFailPage() {
             <div className="mt-4 rounded-lg border border-primary/25 bg-primary/5 p-5 text-center">
               <p className="text-xl font-bold text-card-foreground">Verknüpfte Rollen</p>
               <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                Verbinde dein Discord-Konto mit Meadow Development — deine Team-Rollen werden dann automatisch und fälschungssicher von Discord vergeben, immer synchron zu deinem Panel-Rang.
+                Verbinde dein Discord-Konto mit Rex´s Diner & Repair — deine Team-Rollen werden automatisch und fälschungssicher von Discord vergeben, immer synchron zu deinem Panel-Rang.
               </p>
               <div className="mt-4 flex flex-wrap justify-center gap-2">
-                {["Meadow Network Team", "Management", "Administrator", "Teamleitung", "Development"].map((role) => (
+                {["Rex´s Diner & Repair", "Management", "Administrator", "Teamleitung", "Development"].map((role) => (
                   <span key={role} className="rounded-full border border-primary/50 px-3 py-1 text-xs font-semibold text-primary">
                     {role}
                   </span>
@@ -111,7 +111,7 @@ export default function LoginFailPage() {
               <Button className="mt-5 h-11 rounded-full bg-primary px-7 text-primary-foreground hover:bg-primary/80" onClick={() => router.replace("/login")}>
                 Mit Discord verbinden
               </Button>
-              <p className="mt-4 text-xs text-muted-foreground">Meadow Development • Es werden nur deine Discord-ID und dein Name verarbeitet.</p>
+              <p className="mt-4 text-xs text-muted-foreground">Rex&apos;s Diner &amp; Repair • Es werden nur deine Discord-ID und dein Name verarbeitet.</p>
             </div>
 
             <div className="mt-7 grid gap-3">
