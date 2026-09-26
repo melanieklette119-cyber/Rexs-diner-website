@@ -1806,7 +1806,7 @@ const editMembershipPlan = (plan: MembershipPlan) => {
     }
   }
 
-  const syncRankRolesToDiscord = async () => {
+  const syncRankRolesToDiscord = async (showNotice = true) => {
     try {
       const response = await fetch("/api/discord", {
         method: "POST",
@@ -1815,11 +1815,16 @@ const editMembershipPlan = (plan: MembershipPlan) => {
       })
       const result = await response.json()
       if (!response.ok) throw new Error(result.error || "Unbekannter Discord-Fehler")
-      alert(`${result.count} Discord-Rollen wurden erstellt oder aktualisiert.`)
+      if (showNotice) alert(`${result.count} Discord-Rollen wurden erstellt oder aktualisiert.`)
     } catch (error) {
       alert(error instanceof Error ? error.message : "Discord-Rollen konnten nicht synchronisiert werden.")
     }
   }
+
+  useEffect(() => {
+    if (activeTab !== "ranks") return
+    syncRankRolesToDiscord(false)
+  }, [activeTab, JSON.stringify(customRanks)])
 
   const exportRanks = () => {
     const allRanks = { ...DEFAULT_RANKS, ...customRanks }
@@ -6194,7 +6199,7 @@ const editMembershipPlan = (plan: MembershipPlan) => {
                     >
                       {showCreateRankForm ? "Abbrechen" : "Neuen Dienstgrad Erstellen"}
                     </Button>
-                    <Button onClick={syncRankRolesToDiscord} variant="outline">
+                    <Button onClick={() => syncRankRolesToDiscord()} variant="outline">
                       Discord-Rollen synchronisieren
                     </Button>
                   </div>

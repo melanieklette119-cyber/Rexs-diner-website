@@ -28,7 +28,7 @@ export async function GET(request: NextRequest) {
 
   if (discordError || !code) {
     const errorCode = discordError === "access_denied" ? "discord_denied" : "no_code"
-    const res = NextResponse.redirect(new URL(`/login/fail?reason=${errorCode}`, request.url))
+    const res = NextResponse.redirect(new URL(`/login/fail?reason=${errorCode}&source=discord`, request.url))
     clearCookies(res)
     return res
   }
@@ -78,7 +78,11 @@ export async function GET(request: NextRequest) {
   const botToken = discordBotConfig?.token
   const guildId = discordBotConfig?.guildId
   const clientSecret = process.env.DISCORD_CLIENT_SECRET
-  const redirectUri = `${new URL(request.url).origin}/api/auth/discord/callback`
+  const requestUrl = new URL(request.url)
+  const configuredOrigin = process.env.VERCEL_PROJECT_PRODUCTION_URL
+    ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+    : requestUrl.origin
+  const redirectUri = `${configuredOrigin}/api/auth/discord/callback`
 
   if (!clientId || !clientSecret) {
     const res = NextResponse.redirect(new URL(`${state}?error=not_configured`, request.url))
