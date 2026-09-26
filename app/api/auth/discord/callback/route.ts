@@ -4,7 +4,9 @@ import { createClient as createSupabaseClient } from "@supabase/supabase-js"
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
   const code = searchParams.get("code")
-  const state = searchParams.get("state") || "/bestellen"
+  const discordError = searchParams.get("error")
+  const state = searchParams.get("state") || "/login"
+  const safeState = state.startsWith("/") && !state.startsWith("//") ? state : "/login"
 
   // common cookie options for clearing data
   const deleteOptions = {
@@ -24,8 +26,9 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  if (!code) {
-    const res = NextResponse.redirect(new URL(`${state}?error=no_code`, request.url))
+  if (discordError || !code) {
+    const errorCode = discordError === "access_denied" ? "discord_denied" : "no_code"
+    const res = NextResponse.redirect(new URL(`${safeState}?error=${errorCode}`, request.url))
     clearCookies(res)
     return res
   }
@@ -195,7 +198,7 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    const redirectUrl = new URL(state, request.url)
+    const redirectUrl = new URL(safeState, request.url)
     const response = NextResponse.redirect(redirectUrl)
 
     // before setting new cookies take a fresh suffix and wipe the previous ones
