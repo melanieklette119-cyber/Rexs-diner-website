@@ -113,8 +113,8 @@ export default function LoginPage() {
     const users = await getUsersByDiscordId(discordId)
 
     if (users.length === 0) {
-      setError(`Kein Mitarbeiter-Account mit Discord ID ${discordId} gefunden.`)
       setIsLoading(false)
+      router.push(`/login/fail?reason=no_account&discordId=${encodeURIComponent(discordId)}&discordName=${encodeURIComponent(discordUsername)}`)
       return
     }
 

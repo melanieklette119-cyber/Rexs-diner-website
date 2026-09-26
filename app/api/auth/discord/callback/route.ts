@@ -28,7 +28,7 @@ export async function GET(request: NextRequest) {
 
   if (discordError || !code) {
     const errorCode = discordError === "access_denied" ? "discord_denied" : "no_code"
-    const res = NextResponse.redirect(new URL(`${safeState}?error=${errorCode}`, request.url))
+    const res = NextResponse.redirect(new URL(`/login/fail?reason=${errorCode}`, request.url))
     clearCookies(res)
     return res
   }
