@@ -111,11 +111,13 @@ async function syncRankRolesToDiscord(
   }
 
   const existingRoles = (await existingResponse.json()) as Array<{ id: string; name: string }>
-  const results = []
+  const results: string[] = []
+  const warnings: string[] = []
 
   const sortedRanks = Object.values(ranks).sort((a, b) => a.level - b.level)
   for (const [index, rank] of sortedRanks.entries()) {
-    if (rank.name.trim().toLowerCase() === "suspendiert") continue
+    const normalizedName = rank.name.trim().toLowerCase()
+    if (normalizedName === "suspendiert") continue
     const existingRole = existingRoles.find((role) => role.name === rank.name)
     const payload = {
       name: rank.name,
@@ -135,7 +137,10 @@ async function syncRankRolesToDiscord(
     )
 
     if (!response.ok) {
-      return { ok: false, error: `Rolle „${rank.name}“ konnte nicht erstellt werden (${response.status}).` }
+      const discordError = await response.text()
+      warnings.push(`${rank.name} (${response.status})`)
+      console.error(`[Discord] Rolle „${rank.name}“ übersprungen:`, discordError)
+      continue
     }
 
     const savedRole = (await response.json()) as { id: string }
@@ -145,12 +150,13 @@ async function syncRankRolesToDiscord(
       body: JSON.stringify([{ id: savedRole.id, position: sortedRanks.length - index + 1 }]),
     })
     if (!positionResponse.ok) {
-      return { ok: false, error: `Position der Rolle „${rank.name}“ konnte nicht gesetzt werden.` }
+      warnings.push(`${rank.name} (Position ${positionResponse.status})`)
+      continue
     }
     results.push(existingRole ? "aktualisiert" : "erstellt")
   }
 
-  return { ok: true, count: results.length }
+  return { ok: true, count: results.length, warnings }
 }
 
 // Send message to Discord channel
@@ -359,7 +365,7 @@ export async function POST(request: NextRequest) {
   case "sync_rank_roles": {
     const result = await syncRankRolesToDiscord(data?.ranks || {})
     if (!result.ok) return NextResponse.json({ error: result.error }, { status: 500 })
-    return NextResponse.json({ success: true, count: result.count })
+    return NextResponse.json({ success: true, count: result.count, warnings: result.warnings })
   }
 
   case "new_reservation":
@@ -454,7 +460,7 @@ export async function POST(request: NextRequest) {
       // break
 
       case "new_review":
-        const stars = "⭐".repeat(data.rating)
+        const stars = "���".repeat(data.rating)
 
         await sendToDiscordChannel(
           discordConfig.channels.reviews, // Bewertungen gehen in separaten Channel
