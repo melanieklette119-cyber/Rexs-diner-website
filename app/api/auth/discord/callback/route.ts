@@ -27,8 +27,13 @@ export async function GET(request: NextRequest) {
   }
 
   if (discordError || !code) {
-    const errorCode = discordError === "access_denied" ? "discord_denied" : "no_code"
-    const res = NextResponse.redirect(new URL(`/login/fail?reason=${errorCode}&source=discord`, request.url))
+    const errorCode = discordError === "access_denied" ? "discord_denied" : discordError || "no_code"
+    const errorDescription = searchParams.get("error_description") || ""
+    const failUrl = new URL("/login/fail", request.url)
+    failUrl.searchParams.set("reason", errorCode)
+    failUrl.searchParams.set("source", "discord")
+    if (errorDescription) failUrl.searchParams.set("details", errorDescription)
+    const res = NextResponse.redirect(failUrl)
     clearCookies(res)
     return res
   }

@@ -39,9 +39,21 @@ export async function GET(request: Request) {
   }
 
   const clientId = discordBotConfig?.clientId
+  const botToken = discordBotConfig?.token || process.env.DISCORD_BOT_TOKEN
 
   if (!clientId) {
     return NextResponse.json({ error: "Discord Client ID nicht konfiguriert. Bitte in der Admin-Seite unter Discord Bot eintragen." }, { status: 500 })
+  }
+
+  if (botToken) {
+    await fetch(`https://discord.com/api/v10/applications/${clientId}/role-connections/metadata`, {
+      method: "PUT",
+      headers: { Authorization: `Bot ${botToken}`, "Content-Type": "application/json" },
+      body: JSON.stringify([
+        { key: "verified", name: "Website verifiziert", description: "Discord-Konto ist mit Rex's Diner & Repair verknüpft.", type: 7 },
+        { key: "member", name: "Website-Mitglied", description: "Discord-Konto besitzt einen Website-Account.", type: 7 },
+      ]),
+    })
   }
 
   const requestUrl = new URL(request.url)

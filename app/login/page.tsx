@@ -47,7 +47,8 @@ export default function LoginPage() {
   useEffect(() => {
     if (!oauthError) return
     const messages: Record<string, string> = {
-      no_code: "Discord hat keine Anmeldung bestätigt. Prüfe die OAuth2-Redirect-URL und versuche es erneut.",
+      no_code: "Discord hat keinen Autorisierungscode zurückgegeben.",
+      invalid_scope: "Discord akzeptiert den Linked-Roles-Berechtigungsscope nicht. Aktiviere Linked Roles im Discord Developer Portal.",
       discord_denied: "Die Discord-Anmeldung wurde abgebrochen. Du kannst es jederzeit erneut versuchen.",
       token_failed: "Discord konnte die Anmeldung nicht abschließen. Prüfe die Redirect-URL im Developer Portal.",
       not_configured: "Discord ist auf der Website noch nicht vollständig eingerichtet.",
