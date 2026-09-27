@@ -53,14 +53,18 @@ async function getDiscordConfig(): Promise<{
     }
   }
 
-  let botConfig = { token: "", clientId: "", guildId: "" }
+  let botConfig = {
+    token: process.env.DISCORD_BOT_TOKEN || "",
+    clientId: process.env.CLIENT_ID || "",
+    guildId: process.env.GUILD_ID || "",
+  }
   let channels = { reservations: "", orders: "", reviews: "", adminLogs: "", announcements: "" }
 
   for (const row of data) {
     if (row.config_key === "discord_bot") {
-      botConfig = row.config_value || botConfig
+      botConfig = { ...botConfig, ...(row.config_value || {}) }
     } else if (row.config_key === "discord_channels") {
-      channels = row.config_value || channels
+      channels = { ...channels, ...(row.config_value || {}) }
     }
   }
 
@@ -151,7 +155,6 @@ async function syncRankRolesToDiscord(
     })
     if (!positionResponse.ok) {
       warnings.push(`${rank.name} (Position ${positionResponse.status})`)
-      continue
     }
     results.push(existingRole ? "aktualisiert" : "erstellt")
   }
