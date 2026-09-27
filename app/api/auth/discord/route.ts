@@ -49,9 +49,13 @@ export async function GET(request: Request) {
     ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
     : requestUrl.origin
   const redirectUri = `${configuredOrigin}/api/auth/discord/callback`
-  const scope = encodeURIComponent("identify role_connections.write")
-
-  const discordAuthUrl = `https://discord.com/api/oauth2/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=${scope}&state=${encodeURIComponent(returnTo)}`
+  const discordAuthUrl = new URL("https://discord.com/oauth2/authorize")
+  discordAuthUrl.searchParams.set("client_id", clientId)
+  discordAuthUrl.searchParams.set("redirect_uri", redirectUri)
+  discordAuthUrl.searchParams.set("response_type", "code")
+  discordAuthUrl.searchParams.set("scope", "identify role_connections.write")
+  discordAuthUrl.searchParams.set("state", returnTo)
+  discordAuthUrl.searchParams.set("prompt", "consent")
 
   return NextResponse.redirect(discordAuthUrl)
 }

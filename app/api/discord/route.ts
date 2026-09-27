@@ -115,6 +115,7 @@ async function syncRankRolesToDiscord(
 
   const sortedRanks = Object.values(ranks).sort((a, b) => a.level - b.level)
   for (const [index, rank] of sortedRanks.entries()) {
+    if (rank.name.trim().toLowerCase() === "suspendiert") continue
     const existingRole = existingRoles.find((role) => role.name === rank.name)
     const payload = {
       name: rank.name,
