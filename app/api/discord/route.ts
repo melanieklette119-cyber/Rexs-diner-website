@@ -98,6 +98,16 @@ function getDiscordPermissions(permissions: string[] = []) {
   ).toString()
 }
 
+async function discordFetch(url: string, init: RequestInit, retries = 2) {
+  const response = await fetch(url, init)
+  if (response.status !== 429 || retries <= 0) return response
+
+  const retryAfter = Number(response.headers.get("retry-after") || "1")
+  const delay = Math.min(Math.max(retryAfter * 1000, 1000), 5000)
+  await new Promise((resolve) => setTimeout(resolve, delay))
+  return discordFetch(url, init, retries - 1)
+}
+
 async function syncRankRolesToDiscord(
   ranks: Record<string, { name: string; level: number; permissions?: string[] }>,
 ) {
@@ -106,11 +116,14 @@ async function syncRankRolesToDiscord(
     return { ok: false, error: "Discord Bot-Konfiguration oder Guild-ID fehlt." }
   }
 
-  const existingResponse = await fetch(`${DISCORD_API}/guilds/${config.guildId}/roles`, {
+  const existingResponse = await discordFetch(`${DISCORD_API}/guilds/${config.guildId}/roles`, {
     headers: { Authorization: `Bot ${config.token}` },
     cache: "no-store",
   })
   if (!existingResponse.ok) {
+    if (existingResponse.status === 429) {
+      return { ok: false, error: "Discord ist momentan rate-limitiert. Bitte in einigen Sekunden erneut synchronisieren." }
+    }
     return { ok: false, error: `Discord Rollen konnten nicht geladen werden (${existingResponse.status}).` }
   }
 
@@ -129,7 +142,7 @@ async function syncRankRolesToDiscord(
       hoist: true,
       mentionable: true,
     }
-    const response = await fetch(
+    const response = await discordFetch(
       existingRole
         ? `${DISCORD_API}/guilds/${config.guildId}/roles/${existingRole.id}`
         : `${DISCORD_API}/guilds/${config.guildId}/roles`,
@@ -148,7 +161,7 @@ async function syncRankRolesToDiscord(
     }
 
     const savedRole = (await response.json()) as { id: string }
-    const positionResponse = await fetch(`${DISCORD_API}/guilds/${config.guildId}/roles`, {
+    const positionResponse = await discordFetch(`${DISCORD_API}/guilds/${config.guildId}/roles`, {
       method: "PATCH",
       headers: { Authorization: `Bot ${config.token}`, "Content-Type": "application/json" },
       body: JSON.stringify([{ id: savedRole.id, position: sortedRanks.length - index + 1 }]),
