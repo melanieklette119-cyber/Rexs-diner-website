@@ -1829,7 +1829,7 @@ const editMembershipPlan = (plan: MembershipPlan) => {
   useEffect(() => {
     if (activeTab !== "ranks") return
     syncRankRolesToDiscord(false)
-  }, [activeTab, JSON.stringify(customRanks)])
+  }, [activeTab])
 
   const exportRanks = () => {
     const allRanks = { ...DEFAULT_RANKS, ...customRanks }
