@@ -14,6 +14,22 @@ export default function LoginFailPage() {
   const discordName = searchParams.get("discordName")
   const oauthDetails = searchParams.get("details")
   const hasDiscordData = Boolean(discordId || discordName)
+  const [ranks, setRanks] = useState<string[]>([])
+
+  useEffect(() => {
+    let active = true
+    fetch("/api/ranks", { cache: "no-store" })
+      .then((response) => (response.ok ? response.json() : []))
+      .then((data: Array<{ name?: string }>) => {
+        if (active) setRanks(data.map((rank) => rank.name).filter((name): name is string => Boolean(name)))
+      })
+      .catch(() => {
+        if (active) setRanks([])
+      })
+    return () => {
+      active = false
+    }
+  }, [])
 
   const details = useMemo(() => {
     if (reason === "no_account") {
@@ -104,7 +120,7 @@ export default function LoginFailPage() {
                 Verbinde dein Discord-Konto mit Rex´s Diner & Repair — deine Team-Rollen werden automatisch und fälschungssicher von Discord vergeben, immer synchron zu deinem Panel-Rang.
               </p>
               <div className="mt-4 flex flex-wrap justify-center gap-2">
-                {["Rex´s Diner & Repair", "Management", "Administrator", "Teamleitung", "Development"].map((role) => (
+                {(ranks.length > 0 ? ["Rex´s Diner & Repair", ...ranks] : ["Rex´s Diner & Repair"]).map((role) => (
                   <span key={role} className="rounded-full border border-primary/50 px-3 py-1 text-xs font-semibold text-primary">
                     {role}
                   </span>

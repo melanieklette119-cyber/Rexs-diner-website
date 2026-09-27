@@ -1815,7 +1815,12 @@ const editMembershipPlan = (plan: MembershipPlan) => {
       })
       const result = await response.json()
       if (!response.ok) throw new Error(result.error || "Unbekannter Discord-Fehler")
-      if (showNotice) alert(`${result.count} Discord-Rollen wurden erstellt oder aktualisiert.`)
+      if (showNotice) {
+        const warningText = result.warnings?.length
+          ? ` Übersprungen: ${result.warnings.join(", ")}. Prüfe, ob der Bot „Rollen verwalten“ besitzt und seine Bot-Rolle über den Zielrollen steht.`
+          : ""
+        alert(`${result.count} Discord-Rollen wurden erstellt oder aktualisiert.${warningText}`)
+      }
     } catch (error) {
       alert(error instanceof Error ? error.message : "Discord-Rollen konnten nicht synchronisiert werden.")
     }
