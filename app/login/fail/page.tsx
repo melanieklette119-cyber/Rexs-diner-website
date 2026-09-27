@@ -12,6 +12,7 @@ export default function LoginFailPage() {
   const reason = searchParams.get("reason") || "unknown"
   const discordId = searchParams.get("discordId")
   const discordName = searchParams.get("discordName")
+  const oauthDetails = searchParams.get("details")
   const hasDiscordData = Boolean(discordId || discordName)
 
   const details = useMemo(() => {
@@ -81,6 +82,7 @@ export default function LoginFailPage() {
                 <p className="mt-1 text-sm leading-5 text-muted-foreground">
                   {hasDiscordData ? "Die Discord-Daten wurden empfangen, aber keinem Website-Account zugeordnet." : "Discord hat keine Kontodaten an die Website übermittelt. Starte die Verbindung erneut."}
                 </p>
+                {oauthDetails && <p className="mt-2 break-words text-xs text-destructive">Discord meldet: {oauthDetails}</p>}
                 {discordName && <p className="mt-2 break-all text-xs text-muted-foreground">Name: {discordName}</p>}
                 {discordId && <p className="mt-1 break-all text-xs text-muted-foreground">ID: {discordId}</p>}
               </div>
