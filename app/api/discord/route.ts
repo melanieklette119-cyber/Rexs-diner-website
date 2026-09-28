@@ -43,14 +43,8 @@ async function getDiscordConfig(): Promise<{
   const supabase = createClient(supabaseUrl, supabaseKey)
   const { data, error } = await supabase.from("website_config").select("*")
 
-  if (error || !data) {
+  if (error) {
     console.error("Error fetching Discord config:", error)
-    return {
-      token: "",
-      clientId: "",
-      guildId: "",
-      channels: { reservations: "", orders: "", reviews: "", adminLogs: "", announcements: "" },
-    }
   }
 
   let botConfig = {
@@ -60,7 +54,7 @@ async function getDiscordConfig(): Promise<{
   }
   let channels = { reservations: "", orders: "", reviews: "", adminLogs: "", announcements: "" }
 
-  for (const row of data) {
+  for (const row of data || []) {
     if (row.config_key === "discord_bot") {
       botConfig = { ...botConfig, ...(row.config_value || {}) }
     } else if (row.config_key === "discord_channels") {
@@ -379,12 +373,20 @@ export async function POST(request: NextRequest) {
 
   switch (type) {
   case "list_guild_members": {
-    const response = await discordFetch(`${DISCORD_API}/guilds/${discordConfig.guildId}/members?limit=1000`, {
-      headers: { Authorization: `Bot ${DISCORD_TOKEN}` },
-    })
-    if (!response.ok) return NextResponse.json({ error: `Discord Mitglieder konnten nicht geladen werden (${response.status}).` }, { status: response.status })
-    const members = (await response.json()) as Array<{ user: { id: string; username: string; global_name?: string }; nick?: string }>
-    return NextResponse.json({ members: members.map((member) => ({ id: member.user.id, name: member.nick || member.user.global_name || member.user.username })) })
+    const allMembers: Array<{ user: { id: string; username: string; global_name?: string }; nick?: string }> = []
+    let after = ""
+    do {
+      const query = new URLSearchParams({ limit: "1000" })
+      if (after) query.set("after", after)
+      const response = await discordFetch(`${DISCORD_API}/guilds/${discordConfig.guildId}/members?${query}`, {
+        headers: { Authorization: `Bot ${DISCORD_TOKEN}` },
+      })
+      if (!response.ok) return NextResponse.json({ error: `Discord Mitglieder konnten nicht geladen werden (${response.status}).` }, { status: response.status })
+      const page = (await response.json()) as Array<{ user: { id: string; username: string; global_name?: string }; nick?: string }>
+      allMembers.push(...page)
+      after = page.length === 1000 ? page[page.length - 1].user.id : ""
+    } while (after)
+    return NextResponse.json({ members: allMembers.map((member) => ({ id: member.user.id, name: member.nick || member.user.global_name || member.user.username })) })
   }
 
   case "sync_rank_roles": {

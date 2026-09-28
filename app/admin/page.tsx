@@ -763,6 +763,7 @@ export default function AdminPage({ initialTab }: { initialTab?: string } = {}) 
   })
   const [isAddingUser, setIsAddingUser] = useState(false)
   const [discordMembers, setDiscordMembers] = useState<Array<{ id: string; name: string }>>([])
+  const [discordMembersError, setDiscordMembersError] = useState("")
   const [newUser, setNewUser] = useState({
     username: "",
     password: "",
@@ -1882,14 +1883,22 @@ const editMembershipPlan = (plan: MembershipPlan) => {
 
   useEffect(() => {
     if (!isAddingUser) return
+    setDiscordMembersError("")
     fetch("/api/discord", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ type: "list_guild_members", data: {} }),
     })
-      .then((response) => (response.ok ? response.json() : { members: [] }))
+      .then(async (response) => {
+        const data = await response.json().catch(() => ({}))
+        if (!response.ok) throw new Error(data.error || `Discord-Fehler (${response.status})`)
+        return data
+      })
       .then((data) => setDiscordMembers(data.members || []))
-      .catch(() => setDiscordMembers([]))
+      .catch((error) => {
+        setDiscordMembers([])
+        setDiscordMembersError(error instanceof Error ? error.message : "Discord-Mitglieder konnten nicht geladen werden.")
+      })
   }, [isAddingUser])
 
   const handleAddUser = async () => {
@@ -5061,6 +5070,7 @@ const editMembershipPlan = (plan: MembershipPlan) => {
                               ))}
                             </SelectContent>
                           </Select>
+                          {discordMembersError ? <p className="mt-1 text-sm text-destructive">{discordMembersError}</p> : <p className="mt-1 text-sm text-muted-foreground">{discordMembers.length} Discord-Mitglieder aus dem Server geladen.</p>}
                           <p className="text-sm text-muted-foreground mt-1">
                             Wenn angegeben, erhält der Mitarbeiter eine DM mit den Login-Daten. Das Passwort wird automatisch
                             generiert.
