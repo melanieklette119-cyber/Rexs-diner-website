@@ -4,6 +4,7 @@ import { createClient as createSupabaseClient } from "@supabase/supabase-js"
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
   const returnTo = searchParams.get("returnTo") || "/bestellen"
+  const includeLinkedRoles = returnTo === "/admin"
 
   // Try service role first, fall back to anon key
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -46,6 +47,11 @@ export async function GET(request: Request) {
   }
 
   if (botToken) {
+    await fetch("https://discord.com/api/v10/applications/@me", {
+      method: "PATCH",
+      headers: { Authorization: `Bot ${botToken}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ name: "Rex's Diner ⌯ Verwaltung" }),
+    })
     await fetch(`https://discord.com/api/v10/applications/${clientId}/role-connections/metadata`, {
       method: "PUT",
       headers: { Authorization: `Bot ${botToken}`, "Content-Type": "application/json" },
@@ -65,7 +71,7 @@ export async function GET(request: Request) {
   discordAuthUrl.searchParams.set("client_id", clientId)
   discordAuthUrl.searchParams.set("redirect_uri", redirectUri)
   discordAuthUrl.searchParams.set("response_type", "code")
-  discordAuthUrl.searchParams.set("scope", "identify role_connections.write")
+  discordAuthUrl.searchParams.set("scope", includeLinkedRoles ? "identify role_connections.write" : "identify")
   discordAuthUrl.searchParams.set("state", returnTo)
   discordAuthUrl.searchParams.set("prompt", "consent")
 

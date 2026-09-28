@@ -762,6 +762,7 @@ export default function AdminPage({ initialTab }: { initialTab?: string } = {}) 
     image: "",
   })
   const [isAddingUser, setIsAddingUser] = useState(false)
+  const [discordMembers, setDiscordMembers] = useState<Array<{ id: string; name: string }>>([])
   const [newUser, setNewUser] = useState({
     username: "",
     password: "",
@@ -1879,6 +1880,18 @@ const editMembershipPlan = (plan: MembershipPlan) => {
     }
   }
 
+  useEffect(() => {
+    if (!isAddingUser) return
+    fetch("/api/discord", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ type: "list_guild_members", data: {} }),
+    })
+      .then((response) => (response.ok ? response.json() : { members: [] }))
+      .then((data) => setDiscordMembers(data.members || []))
+      .catch(() => setDiscordMembers([]))
+  }, [isAddingUser])
+
   const handleAddUser = async () => {
     // Prüfe ob Username bereits existiert
     if (users.some((user) => user.username === newUser.username)) {
@@ -1928,20 +1941,9 @@ const editMembershipPlan = (plan: MembershipPlan) => {
       if (rank) {
         await sendDiscordNotification("assign_role", {
           userId: newUser.discordUserId,
-          roleIds: [
-            "1470387715861254187",
-            "1466803414469054720",
-            "1466803489220067413",
-            "1466803489220067413",
-            "1466554758037897237",
-            "1466554665167622164",
-            "1466554835620073473",
-            "1466554805689516246",
-            "1466554796990402601",
-            "1466554783900106835",
-            "1466554780452130967",
-            "1466554902225621185"
-          ]
+          roleIds: [],
+          roleName: rank.name,
+
         })
       }
     } else {
@@ -5046,12 +5048,19 @@ const editMembershipPlan = (plan: MembershipPlan) => {
                         </div>
                         <div>
                           <Label htmlFor="new-discord-id">Discord User ID (optional)</Label>
-                          <Input
-                            id="new-discord-id"
-                            value={newUser.discordUserId || ""}
-                            onChange={(e) => setNewUser({ ...newUser, discordUserId: e.target.value })}
-                            placeholder="z.B. 123456789012345678"
-                          />
+                          <Select value={newUser.discordUserId || "none"} onValueChange={(value) => setNewUser({ ...newUser, discordUserId: value === "none" ? "" : value })}>
+                            <SelectTrigger id="new-discord-id">
+                              <SelectValue placeholder="Discord-Mitglied auswählen" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="none">Kein Discord-Konto</SelectItem>
+                              {discordMembers.map((member) => (
+                                <SelectItem key={member.id} value={member.id}>
+                                  {member.name} ({member.id})
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
                           <p className="text-sm text-muted-foreground mt-1">
                             Wenn angegeben, erhält der Mitarbeiter eine DM mit den Login-Daten. Das Passwort wird automatisch
                             generiert.

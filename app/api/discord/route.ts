@@ -378,6 +378,15 @@ export async function POST(request: NextRequest) {
     console.log(`[Discord] Processing ${type} for guild ${GUILD_ID}`)
 
   switch (type) {
+  case "list_guild_members": {
+    const response = await discordFetch(`${DISCORD_API}/guilds/${discordConfig.guildId}/members?limit=1000`, {
+      headers: { Authorization: `Bot ${DISCORD_TOKEN}` },
+    })
+    if (!response.ok) return NextResponse.json({ error: `Discord Mitglieder konnten nicht geladen werden (${response.status}).` }, { status: response.status })
+    const members = (await response.json()) as Array<{ user: { id: string; username: string; global_name?: string }; nick?: string }>
+    return NextResponse.json({ members: members.map((member) => ({ id: member.user.id, name: member.nick || member.user.global_name || member.user.username })) })
+  }
+
   case "sync_rank_roles": {
     const result = await syncRankRolesToDiscord(data?.ranks || {})
     if (!result.ok) return NextResponse.json({ error: result.error }, { status: 500 })
@@ -535,7 +544,7 @@ export async function POST(request: NextRequest) {
             fields: [
               { name: "Benutzername", value: username, inline: true },
               { name: "Passwort(Nicht Weitergeben!):", value: password, inline: true },
-              { name: "Login-URL", value: "rex-dinner-ts.vercel.app/login", inline: false },
+              { name: "Login-URL", value: "https://rexs-diner-srp.vercel.app/login", inline: false },
             ],
             footer: {
               text: "Bitte ändere dein Passwort beim ersten Login. Bitte gebe keine privaten Daten ein oder Sonstiges. Danke!",
@@ -1299,12 +1308,21 @@ export async function POST(request: NextRequest) {
 
       case "assign_role":
         try {
-          const { userId, roleIds, roleName } = data
-          console.log("[Discord] Assigning roles to user:", userId, "roleIds:", roleIds, "roleName:", roleName)
+  const { userId, roleIds, roleName } = data
+  const resolvedRoleIds = [...(Array.isArray(roleIds) ? roleIds : [])]
+  if (roleName) {
+    const rolesResponse = await discordFetch(`${DISCORD_API}/guilds/${GUILD_ID}/roles`, { headers: { Authorization: `Bot ${DISCORD_TOKEN}` } })
+    if (rolesResponse.ok) {
+      const roles = (await rolesResponse.json()) as Array<{ id: string; name: string }>
+      const matchingRole = roles.find((role) => role.name === roleName)
+      if (matchingRole && !resolvedRoleIds.includes(matchingRole.id)) resolvedRoleIds.push(matchingRole.id)
+    }
+  }
+  console.log("[Discord] Assigning roles to user:", userId, "roleIds:", resolvedRoleIds, "roleName:", roleName)
           // Assign base roles
-          if (roleIds && Array.isArray(roleIds)) {
-            for (const roleId of roleIds) {
-              console.log("[Discord] Assigning base role:", roleId)
+  if (resolvedRoleIds.length > 0) {
+  for (const roleId of resolvedRoleIds) {
+  console.log("[Discord] Assigning base role:", roleId)
               const success = await assignRoleToUser(userId, roleId, DISCORD_TOKEN, GUILD_ID)
               console.log("[Discord] Base role assignment success:", success)
             }
