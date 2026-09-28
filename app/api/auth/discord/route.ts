@@ -4,8 +4,7 @@ import { createClient as createSupabaseClient } from "@supabase/supabase-js"
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
   const returnTo = searchParams.get("returnTo") || "/bestellen"
-  const linkedRoleRoutes = new Set(["/bestellen", "/reservierung", "/werkstatt", "/mitgliedschaften"])
-  const includeLinkedRoles = linkedRoleRoutes.has(returnTo)
+  const includeLinkedRoles = returnTo === "/admin"
 
   // Try service role first, fall back to anon key
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL

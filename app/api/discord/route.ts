@@ -544,7 +544,7 @@ export async function POST(request: NextRequest) {
             fields: [
               { name: "Benutzername", value: username, inline: true },
               { name: "Passwort(Nicht Weitergeben!):", value: password, inline: true },
-              { name: "Login-URL", value: "rex-dinner-ts.vercel.app/login", inline: false },
+              { name: "Login-URL", value: "https://rexs-diner-srp.vercel.app/login", inline: false },
             ],
             footer: {
               text: "Bitte ändere dein Passwort beim ersten Login. Bitte gebe keine privaten Daten ein oder Sonstiges. Danke!",
