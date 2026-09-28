@@ -56,7 +56,12 @@ async function getDiscordConfig(): Promise<{
 
   for (const row of data || []) {
     if (row.config_key === "discord_bot") {
-      botConfig = { ...botConfig, ...(row.config_value || {}) }
+      const storedConfig = row.config_value || {}
+      botConfig = {
+        token: storedConfig.token || botConfig.token,
+        clientId: storedConfig.clientId || botConfig.clientId,
+        guildId: storedConfig.guildId || botConfig.guildId,
+      }
     } else if (row.config_key === "discord_channels") {
       channels = { ...channels, ...(row.config_value || {}) }
     }
@@ -381,7 +386,14 @@ export async function POST(request: NextRequest) {
       const response = await discordFetch(`${DISCORD_API}/guilds/${discordConfig.guildId}/members?${query}`, {
         headers: { Authorization: `Bot ${DISCORD_TOKEN}` },
       })
-      if (!response.ok) return NextResponse.json({ error: `Discord Mitglieder konnten nicht geladen werden (${response.status}).` }, { status: response.status })
+      if (!response.ok) {
+        const errorText = await response.text()
+        const message = response.status === 403
+          ? "Discord verweigert die Mitgliederliste. Aktiviere im Developer Portal unter Bot den Server Members Intent und stelle sicher, dass der Bot auf dem GUILD_ID-Server ist."
+          : `Discord Mitglieder konnten nicht geladen werden (${response.status}).`
+        console.error("[Discord] Guild members request failed:", response.status, errorText)
+        return NextResponse.json({ error: message }, { status: response.status })
+      }
       const page = (await response.json()) as Array<{ user: { id: string; username: string; global_name?: string }; nick?: string }>
       allMembers.push(...page)
       after = page.length === 1000 ? page[page.length - 1].user.id : ""

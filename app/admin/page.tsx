@@ -763,6 +763,7 @@ export default function AdminPage({ initialTab }: { initialTab?: string } = {}) 
   })
   const [isAddingUser, setIsAddingUser] = useState(false)
   const [discordMembers, setDiscordMembers] = useState<Array<{ id: string; name: string }>>([])
+  const [discordMembersLoading, setDiscordMembersLoading] = useState(false)
   const [discordMembersError, setDiscordMembersError] = useState("")
   const [newUser, setNewUser] = useState({
     username: "",
@@ -1884,6 +1885,7 @@ const editMembershipPlan = (plan: MembershipPlan) => {
   useEffect(() => {
     if (!isAddingUser) return
     setDiscordMembersError("")
+    setDiscordMembersLoading(true)
     fetch("/api/discord", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -1899,6 +1901,7 @@ const editMembershipPlan = (plan: MembershipPlan) => {
         setDiscordMembers([])
         setDiscordMembersError(error instanceof Error ? error.message : "Discord-Mitglieder konnten nicht geladen werden.")
       })
+      .finally(() => setDiscordMembersLoading(false))
   }, [isAddingUser])
 
   const handleAddUser = async () => {
@@ -5059,7 +5062,7 @@ const editMembershipPlan = (plan: MembershipPlan) => {
                           <Label htmlFor="new-discord-id">Discord User ID (optional)</Label>
                           <Select value={newUser.discordUserId || "none"} onValueChange={(value) => setNewUser({ ...newUser, discordUserId: value === "none" ? "" : value })}>
                             <SelectTrigger id="new-discord-id">
-                              <SelectValue placeholder="Discord-Mitglied auswählen" />
+                              <SelectValue placeholder={discordMembersLoading ? "Discord-Mitglieder werden geladen..." : "Discord-Mitglied auswählen"} />
                             </SelectTrigger>
                             <SelectContent>
                               <SelectItem value="none">Kein Discord-Konto</SelectItem>
